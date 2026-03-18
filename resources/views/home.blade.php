@@ -798,10 +798,14 @@
           </div>
         </a>
       @empty
-        <div class="event-card">
-          <div class="event-card-body">
-            <div class="event-card-title">No upcoming events yet</div>
-            <div class="event-card-venue">Check back soon for new listings.</div>
+        <div class="event-card" style="grid-column:1 / -1; border-style:dashed; text-align:center; padding:2.5rem;">
+          <div class="event-card-body" style="padding:0;">
+            <div class="event-card-title" style="margin-bottom:.5rem;">No upcoming events yet</div>
+            <div class="event-card-venue" style="margin-bottom:1rem;">Check back soon for new listings or browse all events.</div>
+            <a href="{{ route('events.index') }}" class="btn-ghost" style="display:inline-flex;align-items:center;gap:.25rem;">
+              Browse Events
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
           </div>
         </div>
       @endforelse
@@ -1226,10 +1230,14 @@
           </div>
         </a>
       @empty
-        <div class="event-card">
-          <div class="event-card-body">
-            <div class="event-card-title">No events soon</div>
-            <div class="event-card-venue">Check back later for upcoming listings.</div>
+        <div class="event-card" style="grid-column:1 / -1; background:rgba(255,255,255,.06); border:1px dashed rgba(255,255,255,.2); text-align:center; padding:2.5rem;">
+          <div class="event-card-body" style="padding:0;">
+            <div class="event-card-title" style="color:#fff;margin-bottom:.5rem;">No events happening soon</div>
+            <div class="event-card-venue" style="color:#9ca3af;margin-bottom:1rem;">Check back later or explore all upcoming events.</div>
+            <a href="{{ route('events.index') }}" class="btn-outline-white" style="display:inline-flex;align-items:center;gap:.25rem;">
+              Browse Events
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
           </div>
         </div>
       @endforelse
@@ -1380,7 +1388,6 @@
 </section>
 
 @endsection
-
 
 
 
