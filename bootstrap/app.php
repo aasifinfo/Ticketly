@@ -12,6 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(\App\Http\Middleware\VisitorTracking::class);
+
         $middleware->alias([
             'organiser.auth' => \App\Http\Middleware\OrganiserAuth::class,
             'scanner.auth' => \App\Http\Middleware\ScannerAuth::class,

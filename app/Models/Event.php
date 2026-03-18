@@ -10,6 +10,17 @@ class Event extends Model
 {
     use HasFactory;
 
+    public const CATEGORIES = [
+        'Music',
+        'Nightlife',
+        'Comedy',
+        'Sports',
+        'Arts',
+        'Food & Drink',
+        'Wellness',
+        'Business',
+    ];
+
     protected $fillable = [
         'organiser_id', 'title', 'slug', 'short_description', 'description',
         'banner', 'category', 'starts_at', 'ends_at',
@@ -75,6 +86,12 @@ class Event extends Model
     {
         $min = $this->ticketTiers()->where('is_active', true)->min('price');
         return $min ?? 0;
+    }
+
+    public function getHighestPriceAttribute(): float
+    {
+        $max = $this->ticketTiers()->where('is_active', true)->max('price');
+        return $max ?? 0;
     }
 
     public function getFormattedDateAttribute(): string

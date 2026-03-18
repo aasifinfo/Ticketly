@@ -711,7 +711,7 @@
     <div class="event-field">
       <label class="event-label">Category *</label>
       <select name="category" class="event-select">
-        @foreach(['Music','Sports','Arts & Culture','Food & Drink','Technology','Comedy','Theatre','Festival','Workshop','Conference','Other'] as $cat)
+        @foreach(\App\Models\Event::CATEGORIES as $cat)
         <option value="{{ $cat }}" {{ old('category', $event->category) === $cat ? 'selected' : '' }}>{{ $cat }}</option>
         @endforeach
       </select>

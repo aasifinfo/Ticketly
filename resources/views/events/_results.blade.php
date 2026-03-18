@@ -15,14 +15,10 @@
   <article class="group bg-gray-900 border border-gray-800 rounded-[1.35rem] overflow-hidden hover:border-indigo-500/40 transition-all duration-300 hover:-translate-y-1 flex flex-col"
            aria-label="{{ $event->title }}">
     <a href="{{ route('events.show', $event->slug) }}" class="block relative h-48 overflow-hidden" aria-label="View {{ $event->title }}">
-      @if($event->banner_url)
-        <img src="{{ $event->banner_url }}" alt="Banner image for {{ $event->title }}"
+      
+        <img src="{{ $event->banner_url ?? 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&h=400&fit=crop' }}" alt="Banner image for {{ $event->title }}"
              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy">
-      @else
-        <div class="w-full h-full flex items-center justify-center" style="background:linear-gradient(135deg,#4f46e5,#7c3aed,#db2777)">
-          <span class="text-5xl" aria-hidden="true">🎟</span>
-        </div>
-      @endif
+     
       <div class="absolute inset-0 bg-gradient-to-t from-gray-900/85 via-gray-900/15 to-transparent" aria-hidden="true"></div>
 
       @if($event->is_featured)

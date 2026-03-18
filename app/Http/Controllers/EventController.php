@@ -63,7 +63,7 @@ class EventController extends Controller
 
         $events = $query->paginate(12)->withQueryString();
 
-        $categories = Event::where('status', 'published')
+        $categoryCounts = Event::where('status', 'published')
             ->where(function ($q) {
                 $q->whereNull('approval_status')
                   ->orWhere('approval_status', 'approved');
@@ -73,6 +73,8 @@ class EventController extends Controller
             ->groupBy('category')
             ->orderByDesc('count')
             ->pluck('count', 'category');
+        $categories = collect(Event::CATEGORIES)
+            ->mapWithKeys(fn($cat) => [$cat => (int) ($categoryCounts[$cat] ?? 0)]);
 
         $cities = Event::where('status', 'published')
             ->where(function ($q) {

@@ -4,14 +4,10 @@
     <a href="{{ route('events.show', $event->slug) }}" class="group bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden hover:border-indigo-500/50 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/10 flex flex-col">
         <!-- Banner -->
         <div class="relative h-48 bg-gradient-to-br from-indigo-700 to-purple-800 overflow-hidden flex-shrink-0">
-            @if($event->banner_url)
-            <img src="{{ $event->banner_url }}" alt="{{ $event->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+            
+            <img src="{{ $event->banner_url ?? 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&h=400&fit=crop' }}" alt="{{ $event->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
             <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-            @else
-            <div class="absolute inset-0 flex items-center justify-center opacity-20">
-                <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
-            </div>
-            @endif
+            
 
             <!-- Badges -->
             <div class="absolute top-3 left-3 flex flex-col gap-1.5">

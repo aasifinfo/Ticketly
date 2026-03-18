@@ -18,7 +18,7 @@
       <div>
         <label class="text-xs uppercase tracking-wider text-gray-400">Category</label>
         <select name="category" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white" required>
-          @foreach(['Music','Sports','Arts & Culture','Food & Drink','Technology','Comedy','Theatre','Festival','Workshop','Conference','Other'] as $cat)
+          @foreach(\App\Models\Event::CATEGORIES as $cat)
             <option value="{{ $cat }}" @selected(old('category', $event->category) === $cat)>{{ $cat }}</option>
           @endforeach
         </select>

@@ -3,7 +3,7 @@
 
 @section('content')
 @php
-    $eventImage = $booking->event->banner_url ?: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1400&q=80';
+    $eventImage = $booking->event->banner_url ?: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&h=400&fit=crop';
     $eventDate = $booking->event->starts_at->format('l, F j, Y');
     $eventTime = $booking->event->starts_at->format('g:i A') . ($booking->event->ends_at ? ' - ' . $booking->event->ends_at->format('g:i A') : '');
     $eventLocation = collect([$booking->event->venue_name, $booking->event->city])->filter()->implode(', ');

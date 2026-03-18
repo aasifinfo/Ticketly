@@ -10,7 +10,7 @@
 @php
     $eventPageUrl = route('events.show', $reservation->event->slug);
     $ticketSelectionUrl = $eventPageUrl . '#ticket-form';
-    $heroImage = $reservation->event->banner_url ?: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=1600&q=80';
+    $heroImage = $reservation->event->banner_url ?: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&h=400&fit=crop';
     $startsAt = $reservation->event->starts_at;
     $endsAt = $reservation->event->ends_at;
     $desktopDateLine = $startsAt->format('Y-m-d') . ' at ' . $startsAt->format('g:i A');

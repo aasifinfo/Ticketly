@@ -14,8 +14,8 @@ return [
     'settlement_days'        => env('TICKETLY_SETTLEMENT_DAYS', 0),
 
     // Currency
-    'currency'               => env('TICKETLY_CURRENCY', 'INR'),
-    'currency_symbol'        => env('TICKETLY_CURRENCY_SYMBOL', '₹'),
+    'currency'               => env('TICKETLY_CURRENCY', 'GBP'),
+    'currency_symbol'        => env('TICKETLY_CURRENCY_SYMBOL', '£'),
 
     //Support
     'support_email'          => env('SUPPORT_EMAIL', 'support@ticketly.com'),
