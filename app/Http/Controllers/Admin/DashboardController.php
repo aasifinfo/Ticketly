@@ -9,6 +9,8 @@ use App\Models\Customer;
 use App\Models\Event;
 use App\Models\Organiser;
 use App\Models\Payout;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 
 class DashboardController extends Controller
 {
@@ -54,5 +56,15 @@ class DashboardController extends Controller
             'recentEvents' => $recentEvents,
             'recentBookings' => $recentBookings,
         ]);
+    }
+
+    public function runScheduledTasks(Request $request)
+    {
+        // Run the scheduled commands manually
+        Artisan::call('tickets:expire-reservations');
+        Artisan::call('tickets:dispatch-reminders');
+        Artisan::call('organisers:daily-summary');
+
+        return back()->with('success', 'Scheduled tasks have been executed successfully.');
     }
 }

@@ -73,6 +73,7 @@ Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admi
 Route::prefix('admin')->name('admin.')->middleware(['is_admin'])->group(function () {
     Route::get('/', fn() => redirect()->route('admin.dashboard'))->name('home');
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::post('/dashboard/run-tasks', [AdminDashboardController::class, 'runScheduledTasks'])->name('dashboard.run-tasks');
 
     Route::get('/customers', [AdminCustomerController::class, 'index'])->name('customers.index');
     Route::get('/customers/{id}', [AdminCustomerController::class, 'show'])->name('customers.show');

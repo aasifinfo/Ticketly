@@ -120,6 +120,52 @@
                                    placeholder="+1 (555) 123-4567">
                             <p id="customer-phone-error" class="hidden mt-2 text-sm text-rose-600"></p>
                         </div>
+                        <div>
+                            <label for="customer-address-line1" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">Address Line 1</label>
+                            <input id="customer-address-line1" type="text" autocomplete="address-line1" required aria-describedby="customer-address-line1-error"
+                                   class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"
+                                   placeholder="123 Main Street">
+                            <p id="customer-address-line1-error" class="hidden mt-2 text-sm text-rose-600"></p>
+                        </div>
+                        <div>
+                            <label for="customer-address-line2" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">Address Line 2 (optional)</label>
+                            <input id="customer-address-line2" type="text" autocomplete="address-line2" aria-describedby="customer-address-line2-error"
+                                   class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"
+                                   placeholder="Apartment, suite, building">
+                            <p id="customer-address-line2-error" class="hidden mt-2 text-sm text-rose-600"></p>
+                        </div>
+                        <div class="grid gap-5 sm:grid-cols-2">
+                            <div>
+                                <label for="customer-city" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">City</label>
+                                <input id="customer-city" type="text" autocomplete="address-level2" required aria-describedby="customer-city-error"
+                                       class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"
+                                       placeholder="Mumbai">
+                                <p id="customer-city-error" class="hidden mt-2 text-sm text-rose-600"></p>
+                            </div>
+                            <div>
+                                <label for="customer-state" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">State / Province</label>
+                                <input id="customer-state" type="text" autocomplete="address-level1" required aria-describedby="customer-state-error"
+                                       class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"
+                                       placeholder="Maharashtra">
+                                <p id="customer-state-error" class="hidden mt-2 text-sm text-rose-600"></p>
+                            </div>
+                        </div>
+                        <div class="grid gap-5 sm:grid-cols-2">
+                            <div>
+                                <label for="customer-postal" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">Postal Code</label>
+                                <input id="customer-postal" type="text" autocomplete="postal-code" required aria-describedby="customer-postal-error"
+                                       class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"
+                                       placeholder="400001">
+                                <p id="customer-postal-error" class="hidden mt-2 text-sm text-rose-600"></p>
+                            </div>
+                            <div>
+                                <label for="customer-country" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">Country Code (2 letters)</label>
+                                <input id="customer-country" type="text" autocomplete="country" required aria-describedby="customer-country-error"
+                                       class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 uppercase tracking-[0.2em] outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"
+                                       placeholder="IN">
+                                <p id="customer-country-error" class="hidden mt-2 text-sm text-rose-600"></p>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -356,6 +402,7 @@
     let isExpired = false;
     let promoCode = '';
     let discountAmount = 0;
+    let currentTotal = {{ (float) $initialTotal }};
     const subtotal = {{ (float) $reservation->subtotal }};
     const feePct   = {{ (int) config('ticketly.service_fee_percentage', 5) }};
     const portalFeePct = {{ (int) config('ticketly.portal_fee_percentage', 10) }};
@@ -485,13 +532,25 @@
         const name  = document.getElementById('customer-name').value.trim();
         const email = document.getElementById('customer-email').value.trim();
         const phone = document.getElementById('customer-phone').value.trim();
+        const addressLine1 = document.getElementById('customer-address-line1').value.trim();
+        const city = document.getElementById('customer-city').value.trim();
+        const state = document.getElementById('customer-state').value.trim();
+        const postal = document.getElementById('customer-postal').value.trim();
+        const country = document.getElementById('customer-country').value.trim();
         const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         const phonePattern = /^[0-9+\-\s()]{7,20}$/;
+        const countryPattern = /^[A-Za-z]{2}$/;
 
         let valid = true;
+        const requireAddress = currentTotal > 0;
         let nameError = '';
         let emailError = '';
         let phoneError = '';
+        let addressLine1Error = '';
+        let cityError = '';
+        let stateError = '';
+        let postalError = '';
+        let countryError = '';
 
         if (!name) {
             nameError = 'Full name is required.';
@@ -514,10 +573,45 @@
             valid = false;
         }
 
+        if (requireAddress) {
+            if (!addressLine1) {
+                addressLine1Error = 'Address line 1 is required.';
+                valid = false;
+            }
+
+            if (!city) {
+                cityError = 'City is required.';
+                valid = false;
+            }
+
+            if (!state) {
+                stateError = 'State or province is required.';
+                valid = false;
+            }
+
+            if (!postal) {
+                postalError = 'Postal code is required.';
+                valid = false;
+            }
+
+            if (!country) {
+                countryError = 'Country code is required.';
+                valid = false;
+            } else if (!countryPattern.test(country)) {
+                countryError = 'Use a 2-letter country code (e.g., IN, US).';
+                valid = false;
+            }
+        }
+
         if (showInlineErrors) {
             setFieldError('customer-name', nameError);
             setFieldError('customer-email', emailError);
             setFieldError('customer-phone', phoneError);
+            setFieldError('customer-address-line1', addressLine1Error);
+            setFieldError('customer-city', cityError);
+            setFieldError('customer-state', stateError);
+            setFieldError('customer-postal', postalError);
+            setFieldError('customer-country', countryError);
         }
 
         return valid;
@@ -525,6 +619,7 @@
 
     function validateField(fieldId) {
         const value = document.getElementById(fieldId)?.value.trim() || '';
+        const requireAddress = currentTotal > 0;
         let error = '';
 
         if (fieldId === 'customer-name' && !value) {
@@ -543,6 +638,30 @@
             else if (!phonePattern.test(value)) error = 'Please enter a valid phone number.';
         }
 
+        if (requireAddress) {
+            if (fieldId === 'customer-address-line1' && !value) {
+                error = 'Address line 1 is required.';
+            }
+
+            if (fieldId === 'customer-city' && !value) {
+                error = 'City is required.';
+            }
+
+            if (fieldId === 'customer-state' && !value) {
+                error = 'State or province is required.';
+            }
+
+            if (fieldId === 'customer-postal' && !value) {
+                error = 'Postal code is required.';
+            }
+
+            if (fieldId === 'customer-country') {
+                const countryPattern = /^[A-Za-z]{2}$/;
+                if (!value) error = 'Country code is required.';
+                else if (!countryPattern.test(value)) error = 'Use a 2-letter country code (e.g., IN, US).';
+            }
+        }
+
         setFieldError(fieldId, error);
         return !error;
     }
@@ -552,12 +671,18 @@
             name: document.getElementById('customer-name').value.trim(),
             email: document.getElementById('customer-email').value.trim(),
             phone: document.getElementById('customer-phone').value.trim(),
+            address_line1: document.getElementById('customer-address-line1').value.trim(),
+            address_line2: document.getElementById('customer-address-line2').value.trim(),
+            city: document.getElementById('customer-city').value.trim(),
+            state: document.getElementById('customer-state').value.trim(),
+            postal_code: document.getElementById('customer-postal').value.trim(),
+            country: document.getElementById('customer-country').value.trim().toUpperCase(),
         };
     }
 
     async function fetchIntent(options = {}) {
         const { requireCustomer = true, showLoading = true } = options;
-        const { name, email, phone } = getCustomerDetails();
+        const { name, email, phone, address_line1, address_line2, city, state, postal_code, country } = getCustomerDetails();
 
         if (isExpired) {
             handleExpiry('Your hold has already expired.');
@@ -584,6 +709,12 @@
                 payload.name = name;
                 payload.email = email;
                 payload.phone = phone;
+                payload.address_line1 = address_line1;
+                payload.address_line2 = address_line2;
+                payload.city = city;
+                payload.state = state;
+                payload.postal_code = postal_code;
+                payload.country = country;
             }
 
             const res = await fetch(intentUrl, {
@@ -649,7 +780,7 @@
     }
 
     let detailsTimer;
-    ['customer-name', 'customer-email', 'customer-phone'].forEach((id) => {
+    ['customer-name', 'customer-email', 'customer-phone', 'customer-address-line1', 'customer-address-line2', 'customer-city', 'customer-state', 'customer-postal', 'customer-country'].forEach((id) => {
         const field = document.getElementById(id);
         if (!field) return;
 
@@ -748,11 +879,27 @@
         showProcessingOverlay();
 
         try {
+            const customerDetails = getCustomerDetails();
             const { error, paymentIntent } = await stripe.confirmPayment({
                 elements,
                 confirmParams: {
                     return_url: '{{ route('checkout.success', $reservation->token) }}',
-                    receipt_email: document.getElementById('customer-email').value.trim(),
+                    receipt_email: customerDetails.email,
+                    payment_method_data: {
+                        billing_details: {
+                            name: customerDetails.name,
+                            email: customerDetails.email,
+                            phone: customerDetails.phone,
+                            address: {
+                                line1: customerDetails.address_line1,
+                                line2: customerDetails.address_line2 || null,
+                                city: customerDetails.city,
+                                state: customerDetails.state,
+                                postal_code: customerDetails.postal_code,
+                                country: customerDetails.country,
+                            },
+                        },
+                    },
                 },
                 redirect: 'if_required',
             });
@@ -834,7 +981,7 @@
         const payBtn = document.getElementById('pay-btn');
         const applyPromoBtn = document.getElementById('apply-promo');
         const continueBtn = document.getElementById('mobile-continue-btn');
-        const editableIds = ['customer-name', 'customer-email', 'customer-phone', 'promo-input', 'terms-checkbox'];
+        const editableIds = ['customer-name', 'customer-email', 'customer-phone', 'customer-address-line1', 'customer-address-line2', 'customer-city', 'customer-state', 'customer-postal', 'customer-country', 'promo-input', 'terms-checkbox'];
 
         if (payBtn) payBtn.disabled = disabled;
         if (applyPromoBtn) applyPromoBtn.disabled = disabled;
@@ -930,6 +1077,7 @@
         const discountedSubtotal = Math.max(0, parseFloat((subtotal - discountAmount).toFixed(2)));
         const serviceFee = parseFloat((discountedSubtotal * feePct / 100).toFixed(2));
         const total = parseFloat((discountedSubtotal + portalFee + serviceFee).toFixed(2));
+        currentTotal = total;
         updateSummaryUI(subtotal, discountAmount, portalFee, serviceFee, total);
     }
 

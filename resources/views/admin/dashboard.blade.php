@@ -33,6 +33,17 @@
     </div> -->
   </section>
 
+  <section class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+    <h2 class="text-sm font-semibold text-white mb-4">System Tasks</h2>
+    <p class="text-xs text-gray-500 mb-4">You can manually trigger scheduled tasks here.</p> 
+    <form method="POST" action="{{ route('admin.dashboard.run-tasks') }}" class="inline">
+      @csrf
+      <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+        Run Scheduled Tasks
+      </button>
+    </form>
+  </section>
+
   <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
     <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
       <div class="flex items-center justify-between">

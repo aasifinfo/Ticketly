@@ -78,14 +78,25 @@ class CheckoutController extends Controller
 
         $hasCustomerPayload = $request->filled('name')
             || $request->filled('email')
-            || $request->filled('phone');
+            || $request->filled('phone')
+            || $request->filled('address_line1')
+            || $request->filled('city')
+            || $request->filled('state')
+            || $request->filled('postal_code')
+            || $request->filled('country');
 
         $validated = [];
         if ($hasCustomerPayload) {
             $validated = $request->validate([
-                'name'  => 'required|string|max:255',
-                'email' => 'required|email:rfc|max:255',
-                'phone' => 'required|string|max:30',
+                'name'          => 'required|string|max:255',
+                'email'         => 'required|email:rfc|max:255',
+                'phone'         => 'required|string|max:30',
+                'address_line1' => 'nullable|string|max:255',
+                'address_line2' => 'nullable|string|max:255',
+                'city'          => 'nullable|string|max:255',
+                'state'         => 'nullable|string|max:255',
+                'postal_code'   => 'nullable|string|max:20',
+                'country'       => 'nullable|string|size:2',
             ]);
         }
 
@@ -117,6 +128,18 @@ class CheckoutController extends Controller
         }
 
         $pricing = ServiceFeeCalculator::total((float) $reservation->subtotal, $discountAmount);
+
+        if ($pricing['total'] > 0 && $hasCustomerPayload) {
+            $addressValidated = $request->validate([
+                'address_line1' => 'required|string|max:255',
+                'address_line2' => 'nullable|string|max:255',
+                'city'          => 'required|string|max:255',
+                'state'         => 'required|string|max:255',
+                'postal_code'   => 'required|string|max:20',
+                'country'       => 'required|string|size:2',
+            ]);
+            $validated = array_merge($validated, $addressValidated);
+        }
         $connectedOrganiser = $this->connectedOrganiser($reservation);
         $platformFee = $pricing['portal_fee'] + $pricing['service_fee'];
 
@@ -175,6 +198,29 @@ class CheckoutController extends Controller
 
         $customerName = $validated['name'] ?? $reservation->customer_name;
         $customerEmail = $validated['email'] ?? $reservation->customer_email;
+        $customerPhone = $validated['phone'] ?? $reservation->customer_phone;
+
+        $shipping = null;
+        $hasShippingAddress = !empty($customerName)
+            && !empty($validated['address_line1'])
+            && !empty($validated['city'])
+            && !empty($validated['state'])
+            && !empty($validated['postal_code'])
+            && !empty($validated['country']);
+        if ($hasShippingAddress) {
+            $shipping = [
+                'name'    => $customerName,
+                'phone'   => $customerPhone,
+                'address' => [
+                    'line1'       => $validated['address_line1'],
+                    'line2'       => $validated['address_line2'] ?? null,
+                    'city'        => $validated['city'],
+                    'state'       => $validated['state'],
+                    'postal_code' => $validated['postal_code'],
+                    'country'     => strtoupper($validated['country']),
+                ],
+            ];
+        }
 
         $metadata = [
             'reservation_id'    => (string) $reservation->id,
@@ -198,6 +244,7 @@ class CheckoutController extends Controller
                     $amountPence,
                     $metadata,
                     $customerEmail,
+                    $shipping,
                     $connectedOrganiser?->stripe_account_id,
                     $platformFee
                 );
@@ -208,6 +255,7 @@ class CheckoutController extends Controller
                     ['email' => $customerEmail],
                     $reservation->event->title,
                     $metadata,
+                    $shipping,
                     $connectedOrganiser?->stripe_account_id,
                     $platformFee
                 );
@@ -219,6 +267,7 @@ class CheckoutController extends Controller
                 ['email' => $customerEmail],
                 $reservation->event->title,
                 $metadata,
+                $shipping,
                 $connectedOrganiser?->stripe_account_id,
                 $platformFee
             );
@@ -369,6 +418,7 @@ class CheckoutController extends Controller
         array $customer,
         string $eventTitle,
         array $metadata,
+        ?array $shipping = null,
         ?string $stripeAccountId = null,
         float $platformFee = 0.0
     ): PaymentIntent
@@ -381,6 +431,9 @@ class CheckoutController extends Controller
             'description'          => $eventTitle,
             'metadata'             => $metadata,
         ];
+        if (!empty($shipping)) {
+            $payload['shipping'] = $shipping;
+        }
 
         if (!empty($stripeAccountId)) {
             $payload['application_fee_amount'] = $this->platformFeePence($platformFee, $amountPence);
@@ -409,6 +462,7 @@ class CheckoutController extends Controller
         int $amountPence,
         array $metadata,
         ?string $customerEmail,
+        ?array $shipping,
         ?string $stripeAccountId,
         float $platformFee
     ): PaymentIntent {
@@ -418,6 +472,9 @@ class CheckoutController extends Controller
         ];
         if (!empty($customerEmail)) {
             $intentUpdate['receipt_email'] = $customerEmail;
+        }
+        if (!empty($shipping)) {
+            $intentUpdate['shipping'] = $shipping;
         }
         if (!empty($stripeAccountId)) {
             $intentUpdate['application_fee_amount'] = $this->platformFeePence($platformFee, $amountPence);
