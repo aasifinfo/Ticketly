@@ -13,9 +13,10 @@ use App\Models\Organiser;
 use App\Services\RefundService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class EventController extends Controller
 {
@@ -82,10 +83,8 @@ class EventController extends Controller
         $validated['is_featured'] = $request->boolean('is_featured');
 
         if ($request->hasFile('banner')) {
-            if ($event->banner) {
-                Storage::disk('public')->delete($event->banner);
-            }
-            $validated['banner'] = $request->file('banner')->store('events/banners', 'public');
+            $this->deleteBannerFile($event->banner);
+            $validated['banner'] = $this->storeBannerFile($request->file('banner'));
         }
 
         $event->update($validated);
@@ -103,9 +102,7 @@ class EventController extends Controller
             return back()->withErrors(['delete' => 'Cannot delete an event with paid bookings.']);
         }
 
-        if ($event->banner) {
-            Storage::disk('public')->delete($event->banner);
-        }
+        $this->deleteBannerFile($event->banner);
         $event->delete();
 
         return redirect()->route('admin.events.index')
@@ -231,5 +228,64 @@ class EventController extends Controller
             'status'              => 'nullable|in:draft,published,cancelled',
             'is_featured'         => 'nullable|boolean',
         ]);
+    }
+
+    private function storeBannerFile(\Illuminate\Http\UploadedFile $file): string
+    {
+        $directory = $this->getUploadsRoot() . DIRECTORY_SEPARATOR . 'events';
+        if (!File::exists($directory)) {
+            File::makeDirectory($directory, 0755, true);
+        }
+
+        $filename = (string) Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $file->move($directory, $filename);
+
+        return 'uploads/events/' . $filename;
+    }
+
+    private function deleteBannerFile(?string $banner): void
+    {
+        if (!$banner) {
+            return;
+        }
+
+        $path = $this->resolveBannerPath($banner);
+        if ($path && File::exists($path)) {
+            File::delete($path);
+        }
+    }
+
+    private function resolveBannerPath(string $banner): ?string
+    {
+        if (str_starts_with($banner, 'http://') || str_starts_with($banner, 'https://')) {
+            return null;
+        }
+
+        if (str_starts_with($banner, 'uploads/')) {
+            $basePath = base_path($banner);
+            if (File::exists($basePath)) {
+                return $basePath;
+            }
+
+            return public_path($banner);
+        }
+
+        $fallback = 'uploads/events/' . basename($banner);
+        $basePath = base_path($fallback);
+        if (File::exists($basePath)) {
+            return $basePath;
+        }
+
+        return public_path($fallback);
+    }
+
+    private function getUploadsRoot(): string
+    {
+        $baseUploads = base_path('uploads');
+        if (File::exists($baseUploads)) {
+            return $baseUploads;
+        }
+
+        return public_path('uploads');
     }
 }

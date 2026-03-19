@@ -77,9 +77,24 @@ class Event extends Model
     // ── Accessors ─────────────────────────────────────────────────
     public function getBannerUrlAttribute(): ?string
     {
-        return $this->banner
-            ? \Illuminate\Support\Facades\Storage::url($this->banner)
-            : null;
+        if (!$this->banner) {
+            return null;
+        }
+
+        if (Str::startsWith($this->banner, ['http://', 'https://'])) {
+            return $this->banner;
+        }
+
+        if (Str::startsWith($this->banner, 'uploads/')) {
+            return asset($this->banner);
+        }
+
+        $publicCandidate = 'uploads/events/' . basename($this->banner);
+        if (file_exists(base_path($publicCandidate)) || file_exists(public_path($publicCandidate))) {
+            return asset($publicCandidate);
+        }
+
+        return \Illuminate\Support\Facades\Storage::url($this->banner);
     }
 
     public function getLowestPriceAttribute(): float
