@@ -25,6 +25,7 @@
   .ticket-qty { background: #4f46e5; color: #fff; font-weight: 700; font-size: 12px; border-radius: 6px; padding: 2px 8px; margin: 0 8px; }
   .ticket-price { color: #f9fafb; font-weight: 700; font-size: 14px; }
   .price-row { display: flex; justify-content: space-between; font-size: 13px; color: #9ca3af; padding: 4px 0; }
+ 
   .price-total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 800; color: #f9fafb; padding-top: 12px; border-top: 1px solid #374151; margin-top: 8px; }
   .price-total span:last-child { color: #818cf8; }
   .discount-row { color: #34d399; }
@@ -73,22 +74,30 @@
       <div class="section-title">Ticket Summary</div>
       @foreach($booking->items as $item)
       <div class="ticket-row">
-        <span class="ticket-name">{{ $item->ticketTier->name }}</span>
+        <span class="ticket-name">{{ $item->ticketTier->name }}  {{ $item->unit_price == 0 ? 'Free' : ticketly_money($item->subtotal / $item->quantity) }}</span>
         <span class="ticket-qty">× {{ $item->quantity }}</span>
         <span class="ticket-price">{{ $item->unit_price == 0 ? 'Free' : ticketly_money($item->subtotal) }}</span>
       </div>
       @endforeach
       <div class="divider"></div>
-      <div class="price-row"><span>Subtotal</span><span>{{ ticketly_money($booking->subtotal) }}</span></div>
+      <div class="price-row"><span>Subtotal:</span> <span>&nbsp;{{ ticketly_money($booking->subtotal) }}</span></div>
+      <div class="price-row"><span>Portal Fee: </span> 
+      <span>&nbsp;{{ ticketly_money( $booking->portal_fee ?? 0) }}</span>
+      </div>
+      <div class="price-row">
+      <span>Service Fee: </span>
+      <span>&nbsp;{{ ticketly_money( $booking->service_fee ?? 0) }}</span>
+      </div>
       @if($booking->discount_amount > 0)
       <div class="price-row discount-row">
-        <span>Promo Discount{{ $booking->promoCode ? ' ('.$booking->promoCode->code.')' : '' }}</span>
+        <span>Promo Discount: {{ $booking->promoCode ? ' ('.$booking->promoCode->code.')' : '' }}</span>
         <span>-{{ ticketly_money($booking->discount_amount) }}</span>
       </div>
       @endif
-      <div class="price-row"><span>Portal Fee</span><span>{{ ticketly_money($booking->portal_fee ?? 0) }}</span></div>
-      <div class="price-row"><span>Service Fee</span><span>{{ ticketly_money($booking->service_fee ?? 0) }}</span></div>
-      <div class="price-total"><span>Total Paid</span><span>{{ ticketly_money($booking->total) }}</span></div>
+      <div class="price-total">
+      <span>Total Paid: </span> 
+      <span>&nbsp;{{ ticketly_money( $booking->total) }}</span>
+      </div>
     </div>
 
     <!-- Attached Ticket Notice -->

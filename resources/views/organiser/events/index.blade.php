@@ -675,7 +675,7 @@
           <span class="events-item__badge">{{ $badgeLabel }}</span>
           <span class="events-item__approval {{ $approvalClass }}">{{ $approvalStatus }}</span>
         </div>
-        <div class="events-item__date">{{ $event->starts_at->format('Y-m-d') }}</div>
+       <div class="events-item__date">{{ $event->starts_at->format('l, F d, Y') }}</div> 
 
         <div class="events-item__stats">
           <span class="events-stat">

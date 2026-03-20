@@ -308,12 +308,6 @@
               <td>Subtotal</td>
               <td>{{ ticketly_money($booking->subtotal) }}</td>
             </tr>
-            @if($booking->discount_amount > 0)
-            <tr class="discount">
-              <td>Discount{{ $booking->promoCode ? ' (' . $booking->promoCode->code . ')' : '' }}</td>
-              <td>-{{ ticketly_money($booking->discount_amount) }}</td>
-            </tr>
-            @endif
             <tr>
               <td>Portal Fee</td>
               <td>{{ ticketly_money($booking->portal_fee ?? 0) }}</td>
@@ -322,6 +316,12 @@
               <td>Service Fee</td>
               <td>{{ ticketly_money($booking->service_fee ?? 0) }}</td>
             </tr>
+            @if($booking->discount_amount > 0)
+            <tr class="discount">
+              <td>Discount{{ $booking->promoCode ? ' (' . $booking->promoCode->code . ')' : '' }}</td>
+              <td>-{{ ticketly_money($booking->discount_amount) }}</td>
+            </tr>
+            @endif
             <tr class="grand">
               <td>Total Paid</td>
               <td><span class="currency-symbol">{{ ticketly_currency_symbol() }}</span>{{ number_format((float) $booking->total, 2) }}</td>

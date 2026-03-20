@@ -72,18 +72,18 @@
                     <div class="flex justify-between text-sm text-gray-400">
                         <span>Subtotal</span><span>{{ ticketly_money($booking->subtotal) }}</span>
                     </div>
-                    @if($booking->discount_amount > 0)
-                    <div class="flex justify-between text-sm text-emerald-400">
-                        <span>Promo Discount@if($booking->promoCode) ({{ $booking->promoCode->code }})@endif</span>
-                        <span>-{{ ticketly_money($booking->discount_amount) }}</span>
-                    </div>
-                    @endif
                     <div class="flex justify-between text-sm text-gray-400">
                         <span>Portal Fee</span><span>{{ ticketly_money($booking->portal_fee ?? 0) }}</span>
                     </div>
                     <div class="flex justify-between text-sm text-gray-400">
                         <span>Service Fee</span><span>{{ ticketly_money($booking->service_fee ?? 0) }}</span>
                     </div>
+                    @if($booking->discount_amount > 0)
+                    <div class="flex justify-between text-sm text-emerald-400">
+                        <span>Promo Discount@if($booking->promoCode) ({{ $booking->promoCode->code }})@endif</span>
+                        <span>-{{ ticketly_money($booking->discount_amount) }}</span>
+                    </div>
+                    @endif
                     <div class="flex justify-between font-extrabold text-white text-lg pt-3 border-t border-gray-700 mt-2">
                         <span>Total Paid</span>
                         <span class="text-indigo-400">{{ ticketly_money($booking->total) }}</span>

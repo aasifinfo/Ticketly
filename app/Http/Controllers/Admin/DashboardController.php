@@ -65,6 +65,14 @@ class DashboardController extends Controller
         Artisan::call('tickets:dispatch-reminders');
         Artisan::call('organisers:daily-summary');
 
+        // Process queued notification jobs (InfinityFree-safe manual trigger)
+        Artisan::call('queue:work', [
+            '--queue' => config('notifications.queue', 'default') . ',default',
+            '--stop-when-empty' => true,
+            '--max-jobs' => 50,
+            '--max-time' => 20,
+        ]);
+
         return back()->with('success', 'Scheduled tasks have been executed successfully.');
     }
 }

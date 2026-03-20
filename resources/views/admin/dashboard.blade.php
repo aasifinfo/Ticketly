@@ -55,7 +55,7 @@
         <a href="{{ route('admin.events.show', $event->id) }}" class="flex items-center justify-between gap-3 border border-gray-800 rounded-xl p-3 hover:border-gray-700 transition">
           <div>
             <div class="text-sm font-semibold text-white">{{ $event->title }}</div>
-            <div class="text-xs text-gray-500">{{ $event->organiser?->name ?? 'Organiser' }} · {{ $event->starts_at?->format('d M Y') }}</div>
+            <div class="text-xs text-gray-500">{{ $event->organiser?->name ?? 'Organiser' }} ·  {{ $event->starts_at->format('l, F j, Y') }}</div>
           </div>
           <span class="badge {{ $event->approval_status === 'approved' ? 'badge--positive' : ($event->approval_status === 'rejected' ? 'badge--danger' : 'badge--warning') }}">
             {{ ucfirst($event->approval_status ?? 'pending') }}

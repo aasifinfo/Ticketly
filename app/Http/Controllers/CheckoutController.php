@@ -79,7 +79,6 @@ class CheckoutController extends Controller
         $hasCustomerPayload = $request->filled('name')
             || $request->filled('email')
             || $request->filled('phone')
-            || $request->filled('address_line1')
             || $request->filled('city')
             || $request->filled('state')
             || $request->filled('postal_code')
@@ -91,8 +90,6 @@ class CheckoutController extends Controller
                 'name'          => 'required|string|max:255',
                 'email'         => 'required|email:rfc|max:255',
                 'phone'         => 'required|string|max:30',
-                'address_line1' => 'nullable|string|max:255',
-                'address_line2' => 'nullable|string|max:255',
                 'city'          => 'nullable|string|max:255',
                 'state'         => 'nullable|string|max:255',
                 'postal_code'   => 'nullable|string|max:20',
@@ -101,7 +98,9 @@ class CheckoutController extends Controller
         }
 
         // Promo
-        $promoCode      = null;
+        $subtotal = (float) $reservation->subtotal;
+        $basePricing = ServiceFeeCalculator::total($subtotal);
+        $promoCode = null;
         $discountAmount = 0.0;
         if ($request->filled('promo_code')) {
             $promoCode = PromoCode::where('code', strtoupper(trim($request->promo_code)))
@@ -118,7 +117,7 @@ class CheckoutController extends Controller
                 }
 
                 if ($isApplicable) {
-                    $discountAmount = $promoCode->calculateDiscount((float) $reservation->subtotal);
+                    $discountAmount = $promoCode->calculateDiscount($basePricing['gross_total']);
                 } else {
                     $promoCode = null;
                 }
@@ -127,12 +126,10 @@ class CheckoutController extends Controller
             }
         }
 
-        $pricing = ServiceFeeCalculator::total((float) $reservation->subtotal, $discountAmount);
+        $pricing = ServiceFeeCalculator::total($subtotal, $discountAmount);
 
         if ($pricing['total'] > 0 && $hasCustomerPayload) {
             $addressValidated = $request->validate([
-                'address_line1' => 'required|string|max:255',
-                'address_line2' => 'nullable|string|max:255',
                 'city'          => 'required|string|max:255',
                 'state'         => 'required|string|max:255',
                 'postal_code'   => 'required|string|max:20',
@@ -145,7 +142,7 @@ class CheckoutController extends Controller
 
         $updateData = [
             'promo_code_id'   => $promoCode?->id,
-            'discount_amount' => $discountAmount,
+            'discount_amount' => $pricing['discount'],
             'portal_fee'      => $pricing['portal_fee'],
             'service_fee'     => $pricing['service_fee'],
             'total'           => $pricing['total'],
@@ -201,26 +198,6 @@ class CheckoutController extends Controller
         $customerPhone = $validated['phone'] ?? $reservation->customer_phone;
 
         $shipping = null;
-        $hasShippingAddress = !empty($customerName)
-            && !empty($validated['address_line1'])
-            && !empty($validated['city'])
-            && !empty($validated['state'])
-            && !empty($validated['postal_code'])
-            && !empty($validated['country']);
-        if ($hasShippingAddress) {
-            $shipping = [
-                'name'    => $customerName,
-                'phone'   => $customerPhone,
-                'address' => [
-                    'line1'       => $validated['address_line1'],
-                    'line2'       => $validated['address_line2'] ?? null,
-                    'city'        => $validated['city'],
-                    'state'       => $validated['state'],
-                    'postal_code' => $validated['postal_code'],
-                    'country'     => strtoupper($validated['country']),
-                ],
-            ];
-        }
 
         $metadata = [
             'reservation_id'    => (string) $reservation->id,
@@ -277,7 +254,8 @@ class CheckoutController extends Controller
             'client_secret'  => $intent->client_secret,
             'intent_id'      => $intent->id,
             'amount'         => $pricing['total'],
-            'discount'       => $discountAmount,
+            'discount'       => $pricing['discount'],
+            'gross_total'    => $pricing['gross_total'],
             'portal_fee'     => $pricing['portal_fee'],
             'service_fee'    => $pricing['service_fee'],
             'currency'       => ticketly_currency(),

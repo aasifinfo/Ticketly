@@ -5,8 +5,9 @@ namespace App\Http\Controllers\Organiser;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ProfileController extends Controller
 {
@@ -40,9 +41,9 @@ class ProfileController extends Controller
         if ($request->hasFile('logo')) {
             // Delete old logo
             if ($organiser->logo) {
-                Storage::disk('public')->delete($organiser->logo);
+                $this->deleteLogoFile($organiser->logo);
             }
-            $validated['logo'] = $request->file('logo')->store('organisers/logos', 'public');
+            $validated['logo'] = $this->storeLogoFile($request->file('logo'));
         }
 
         $organiser->update($validated);
@@ -89,12 +90,71 @@ class ProfileController extends Controller
         Log::info('[Organiser] Account deleted: ' . $organiser->email);
 
         if ($organiser->logo) {
-            Storage::disk('public')->delete($organiser->logo);
+            $this->deleteLogoFile($organiser->logo);
         }
 
         $organiser->delete();
         $request->session()->flush();
 
         return redirect()->route('home')->with('info', 'Your organiser account has been permanently deleted.');
+    }
+
+    private function storeLogoFile(\Illuminate\Http\UploadedFile $file): string
+    {
+        $directory = $this->getUploadsRoot() . DIRECTORY_SEPARATOR . 'organisers';
+        if (!File::exists($directory)) {
+            File::makeDirectory($directory, 0755, true);
+        }
+
+        $filename = (string) Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $file->move($directory, $filename);
+
+        return 'uploads/organisers/' . $filename;
+    }
+
+    private function deleteLogoFile(?string $logo): void
+    {
+        if (!$logo) {
+            return;
+        }
+
+        $path = $this->resolveLogoPath($logo);
+        if ($path && File::exists($path)) {
+            File::delete($path);
+        }
+    }
+
+    private function resolveLogoPath(string $logo): ?string
+    {
+        if (str_starts_with($logo, 'http://') || str_starts_with($logo, 'https://')) {
+            return null;
+        }
+
+        if (str_starts_with($logo, 'uploads/')) {
+            $basePath = base_path($logo);
+            if (File::exists($basePath)) {
+                return $basePath;
+            }
+
+            return public_path($logo);
+        }
+
+        $fallback = 'uploads/organisers/' . basename($logo);
+        $basePath = base_path($fallback);
+        if (File::exists($basePath)) {
+            return $basePath;
+        }
+
+        return public_path($fallback);
+    }
+
+    private function getUploadsRoot(): string
+    {
+        $baseUploads = base_path('uploads');
+        if (File::exists($baseUploads)) {
+            return $baseUploads;
+        }
+
+        return public_path('uploads');
     }
 }

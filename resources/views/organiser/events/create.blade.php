@@ -6,6 +6,8 @@
 
 @section('head')
 <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <style>
   .event-create-page {
     background-image: none !important;
@@ -119,6 +121,91 @@
   .event-input::placeholder,
   .event-textarea::placeholder {
     color: var(--event-placeholder);
+  }
+
+  .event-datetime-wrap {
+    position: relative;
+  }
+
+  .event-input--datetime {
+    padding-right: 2.65rem;
+  }
+
+  .event-input--datetime::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 2.75rem;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .event-datetime-trigger {
+    position: absolute;
+    top: 50%;
+    right: 0.8rem;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--event-datetime-trigger);
+    cursor: pointer;
+  }
+
+  .event-datetime-trigger svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .flatpickr-calendar {
+    border-radius: 0.9rem;
+    border: 1px solid #d7dce5;
+    box-shadow: 0 22px 55px rgba(15, 23, 42, 0.18);
+    overflow: hidden;
+  }
+
+  .flatpickr-months,
+  .flatpickr-weekdays {
+    background: #f8fafc;
+  }
+
+  .flatpickr-current-month {
+    padding-top: 0.2rem;
+  }
+
+  .flatpickr-current-month .flatpickr-monthDropdown-months,
+  .flatpickr-current-month input.cur-year {
+    font-weight: 700;
+  }
+
+  .flatpickr-day.selected,
+  .flatpickr-day.startRange,
+  .flatpickr-day.endRange,
+  .flatpickr-day.selected:hover,
+  .flatpickr-day.startRange:hover,
+  .flatpickr-day.endRange:hover {
+    background: #7c3aed;
+    border-color: #7c3aed;
+  }
+
+  .flatpickr-time {
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .flatpickr-time input:hover,
+  .flatpickr-time .flatpickr-am-pm:hover,
+  .flatpickr-time input:focus,
+  .flatpickr-time .flatpickr-am-pm:focus,
+  .flatpickr-current-month .flatpickr-monthDropdown-months:hover,
+  .flatpickr-current-month input.cur-year:hover {
+    background: rgba(124, 58, 237, 0.08);
   }
 
   .event-input:focus,
@@ -403,6 +490,7 @@
     --event-input-bg: #ffffff;
     --event-input-border: #d7dce5;
     --event-placeholder: #9ca3af;
+    --event-datetime-trigger: #111827;
     --event-upload-bg: #ffffff;
   }
 
@@ -418,6 +506,7 @@
     --event-input-bg: #0f172a;
     --event-input-border: #334155;
     --event-placeholder: #64748b;
+    --event-datetime-trigger: #f8fafc;
     --event-upload-bg: #0f172a;
   }
 
@@ -425,6 +514,8 @@
   :root[data-theme='dark'] .event-status-chip {
     background: #0f172a;
   }
+
+
 </style>
 @endsection
 
@@ -553,11 +644,21 @@
   <div class="event-grid event-grid--2">
     <div class="event-field">
       <label class="event-label">Start Date &amp; Time *</label>
-      <input type="datetime-local" name="starts_at" value="{{ old('starts_at') }}" required class="event-input">
+      <div class="event-datetime-wrap">
+        <input type="text" name="starts_at" value="{{ old('starts_at') }}" required class="event-input event-input--datetime js-datetime-input" placeholder="Select start date and time" autocomplete="off">
+        <button type="button" class="event-datetime-trigger" onclick="openDateTimePicker(this)" aria-label="Open start date and time picker">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7.75 4.75v3.5m8.5-3.5v3.5M5 8.25h14M6.5 19.25h11a1.75 1.75 0 0 0 1.75-1.75v-9A1.75 1.75 0 0 0 17.5 6.75h-11A1.75 1.75 0 0 0 4.75 8.5v9A1.75 1.75 0 0 0 6.5 19.25Z"/></svg>
+        </button>
+      </div>
     </div>
     <div class="event-field">
       <label class="event-label">End Date &amp; Time *</label>
-      <input type="datetime-local" name="ends_at" value="{{ old('ends_at') }}" required class="event-input">
+      <div class="event-datetime-wrap">
+        <input type="text" name="ends_at" value="{{ old('ends_at') }}" required class="event-input event-input--datetime js-datetime-input" placeholder="Select end date and time" autocomplete="off">
+        <button type="button" class="event-datetime-trigger" onclick="openDateTimePicker(this)" aria-label="Open end date and time picker">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7.75 4.75v3.5m8.5-3.5v3.5M5 8.25h14M6.5 19.25h11a1.75 1.75 0 0 0 1.75-1.75v-9A1.75 1.75 0 0 0 17.5 6.75h-11A1.75 1.75 0 0 0 4.75 8.5v9A1.75 1.75 0 0 0 6.5 19.25Z"/></svg>
+        </button>
+      </div>
     </div>
   </div>
 </section>
@@ -676,6 +777,17 @@ ClassicEditor.create(document.querySelector('#description'), {
     toolbar: ['heading','|','bold','italic','link','bulletedList','numberedList','|','blockQuote','undo','redo'],
 }).catch(console.error);
 
+function openDateTimePicker(trigger) {
+    const input = trigger.closest('.event-datetime-wrap')?.querySelector('.js-datetime-input');
+    if (!input) return;
+    if (input._flatpickr) {
+        input._flatpickr.open();
+        return;
+    }
+    input.focus({ preventScroll: true });
+    input.click();
+}
+
 function addLineupRow() {
     const row = document.createElement('div');
     row.className = 'event-lineup-row lineup-row';
@@ -698,5 +810,28 @@ function addLineupRow() {
     `;
     document.getElementById('lineup-rows').appendChild(row);
 }
+
+document.querySelectorAll('.js-datetime-input').forEach((input) => {
+    flatpickr(input, {
+        enableTime: true,
+        time_24hr: false,
+        dateFormat: 'Y-m-d\\TH:i',
+        altInput: true,
+        altFormat: 'd-m-Y h:i K',
+        altInputClass: 'event-input event-input--datetime',
+        minuteIncrement: 5,
+        allowInput: true,
+        disableMobile: true,
+        monthSelectorType: 'dropdown',
+        nextArrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 6 6 6-6 6"/></svg>',
+        prevArrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m15 18-6-6 6-6"/></svg>',
+        onReady: function (_, __, instance) {
+            if (instance.altInput) {
+                instance.altInput.placeholder = '30-12-2026 12:45 AM';
+                instance.altInput.autocomplete = 'off';
+            }
+        },
+    });
+});
 </script>
 @endsection

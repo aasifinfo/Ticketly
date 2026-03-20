@@ -34,16 +34,18 @@ class PromoCode extends Model
         return true;
     }
 
-    public function calculateDiscount(float $subtotal): float
+    public function calculateDiscount(float $amount): float
     {
+        $amount = max(0.0, round($amount, 2));
+
         if ($this->type === 'percentage') {
-            $discount = round($subtotal * ($this->value / 100), 2);
+            $discount = round($amount * ($this->value / 100), 2);
             if ($this->max_discount) {
                 $discount = min($discount, (float) $this->max_discount);
             }
-            return $discount;
+            return min($discount, $amount);
         }
         // Fixed amount
-        return min((float) $this->value, $subtotal);
+        return min((float) $this->value, $amount);
     }
 }

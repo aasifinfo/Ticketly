@@ -37,7 +37,7 @@
         <div class="hidden items-center gap-6 md:ml-6 md:flex">
           <a href="{{ route('home') }}" class="text-sm font-medium transition-colors" style="color:#c5c9d2;" onmouseover="this.style.color='#f5f7fb'" onmouseout="this.style.color='#c5c9d2'">Explore</a>
           <a href="{{ route('events.index') }}" class="text-sm font-medium transition-colors" style="color:#c5c9d2;" onmouseover="this.style.color='#f5f7fb'" onmouseout="this.style.color='#c5c9d2'">Categories</a>
-          <a href="{{ route('organiser.register') }}" class="text-sm font-medium transition-colors" style="color:#c5c9d2;" onmouseover="this.style.color='#f5f7fb'" onmouseout="this.style.color='#c5c9d2'">Become a Organizer</a>
+          <a href="{{ route('organiser.register') }}" class="text-sm font-medium transition-colors" style="color:#c5c9d2;" onmouseover="this.style.color='#f5f7fb'" onmouseout="this.style.color='#c5c9d2'">Become an Organiser</a>
         </div>
 
         <div class="hidden md:ml-auto md:flex items-center gap-2 sm:gap-4">
@@ -49,7 +49,7 @@
         <div class="flex flex-col items-center gap-3 pt-2 text-center">
           <a href="{{ route('home') }}" class="text-sm font-medium transition-colors w-full" style="color:#c5c9d2;" onmouseover="this.style.color='#f5f7fb'" onmouseout="this.style.color='#c5c9d2'">Explore</a>
           <a href="{{ route('events.index') }}" class="text-sm font-medium transition-colors w-full" style="color:#c5c9d2;" onmouseover="this.style.color='#f5f7fb'" onmouseout="this.style.color='#c5c9d2'">Categories</a>
-          <a href="{{ route('organiser.register') }}" class="text-sm font-medium transition-colors w-full" style="color:#c5c9d2;" onmouseover="this.style.color='#f5f7fb'" onmouseout="this.style.color='#c5c9d2'">Become a Organizer</a>
+          <a href="{{ route('organiser.register') }}" class="text-sm font-medium transition-colors w-full" style="color:#c5c9d2;" onmouseover="this.style.color='#f5f7fb'" onmouseout="this.style.color='#c5c9d2'">Become an Organiser</a>
           <a href="{{ route('organiser.login') }}" class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900 sm:px-5 sm:text-sm">Login</a>
         </div>
       </div>

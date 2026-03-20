@@ -23,6 +23,6 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         AdminAuth::logout();
-        return redirect()->route('admin.login')->with('info', 'You have been logged out.');
+        return redirect()->route('organiser.login')->with('info', 'You have been logged out.');
     }
 }

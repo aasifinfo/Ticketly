@@ -763,18 +763,21 @@
             @endif
           </div>
           <div class="event-card-body">
-            <div class="event-card-meta">
+            <div class="event-card-title">{{ $event->title }}</div>
+          <div class="event-card-meta">
   <span style="display:flex;align-items:center;gap:.4rem;">
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
     {{ $event->starts_at->format('l M d, Y') }}
   </span>
-  <span style="display:flex;align-items:center;gap:.4rem;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s7-4.5 7-11a7 7 0 1 0-14 0c0 6.5 7 11 7 11Z"/><circle cx="12" cy="11" r="3"/></svg>
-    {{ $event->city }}
-  </span>
+  
 </div>
-            <div class="event-card-title">{{ $event->title }}</div>
-            <div class="event-card-venue">{{ $event->venue_name }}</div>
+           
+            <div class="event-card-venue">
+              <span style="display:flex;align-items:center;gap:.4rem;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s7-4.5 7-11a7 7 0 1 0-14 0c0 6.5 7 11 7 11Z"/><circle cx="12" cy="11" r="3"/></svg>
+             {{ $event->city }}
+            </span>
+            </div>
             <div class="event-card-footer">
               <span class="event-price">
                 @php
@@ -1200,18 +1203,19 @@
             @endif
           </div>
           <div class="event-card-body">
+            <div class="event-card-title">{{ $event->title }}</div>
             <div class="event-card-meta">
   <span style="display:flex;align-items:center;gap:.4rem;">
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
     {{ $event->starts_at->format('l M d, Y') }}
   </span>
-  <span style="display:flex;align-items:center;gap:.4rem;">
+ 
+</div>
+            
+            <div class="event-card-venue"> <span style="display:flex;align-items:center;gap:.4rem;">
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s7-4.5 7-11a7 7 0 1 0-14 0c0 6.5 7 11 7 11Z"/><circle cx="12" cy="11" r="3"/></svg>
     {{ $event->city }}
-  </span>
-</div>
-            <div class="event-card-title">{{ $event->title }}</div>
-            <div class="event-card-venue">{{ $event->venue_name }}</div>
+  </span></div>
             <div class="event-card-footer">
               <span class="event-price">
                 @php

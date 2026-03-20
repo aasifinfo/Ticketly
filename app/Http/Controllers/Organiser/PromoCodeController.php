@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Organiser;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\PromoCode;
+use App\Services\ServiceFeeCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -196,13 +197,15 @@ class PromoCodeController extends Controller
             ]);
         }
 
-        $discount = $promo->calculateDiscount((float) $request->subtotal);
+        $pricing = ServiceFeeCalculator::total((float) $request->subtotal);
+        $discount = $promo->calculateDiscount($pricing['gross_total']);
 
         return response()->json([
             'valid'    => true,
             'code'     => $promo->code,
             'type'     => $promo->type,
             'value'    => $promo->value,
+            'gross_total' => $pricing['gross_total'],
             'discount' => $discount,
             'message'  => $promo->type === 'percentage'
                 ? number_format($promo->value, 0) . '% discount applied - saving ' . number_format($discount, 2)

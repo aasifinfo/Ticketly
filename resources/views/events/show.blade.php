@@ -12,6 +12,8 @@
     $organiserLogo = $event->organiser->logo_url ?? null;
     $organiserInitials = $event->organiser->initials ?? 'PE';
     $ticketItemsOld = collect(old('items', []));
+    $eventStartLabel = $event->starts_at->format('l, F j, Y') . ' at ' . $event->starts_at->format('g:i A');
+    $eventEndLabel = $event->ends_at->format('l, F j, Y') . ' at ' . $event->ends_at->format('g:i A');
     $lineupItems = collect($event->performer_lineup ?? [])->filter(fn ($item) => filled(data_get($item, 'name')))->values();
     if ($lineupItems->isEmpty()) {
         $lineupItems = collect([
@@ -59,7 +61,10 @@
                     {{ $event->category ? strtoupper($event->category) : 'Live Event' }}
                 </div>
                 <h1 class="mt-6 text-3xl font-black tracking-[-0.045em] text-white sm:mt-7 sm:text-5xl lg:text-[5rem] lg:leading-[1.02]" style="color:#ffffff !important;">{{ $event->title }}</h1>
-                <p class="mt-4 text-lg font-medium text-white/95 sm:mt-5 sm:text-[2.35rem]">{{ $event->starts_at->format('l, F j') }} | {{ $event->starts_at->format('g:i A') }} - {{ $event->ends_at->format('g:i A') }}</p>
+                <div class="mt-4 space-y-1 text-lg font-medium text-white/95 sm:mt-5 sm:text-[2rem]">
+                    <p>Start: {{ $eventStartLabel }}</p>
+                    <p>End: {{ $eventEndLabel }}</p>
+                </div>
             </div>
         </div>
     </section>
@@ -80,7 +85,10 @@
                         <div class="mt-6 grid gap-5 sm:grid-cols-2">
                             <div class="flex items-start gap-4">
                                 <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-600"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 3v3m8-3v3M4 9h16M5.5 5.5h13A1.5 1.5 0 0 1 20 7v11.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5V7a1.5 1.5 0 0 1 1.5-1.5Z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></div>
-                                <div><p class="text-[1.05rem] font-semibold text-slate-900">{{ $event->starts_at->format('l, F j, Y') }}</p><p class="mt-1 text-[1rem] text-slate-500">{{ $event->starts_at->format('g:i A') }} - {{ $event->ends_at->format('g:i A') }}</p></div>
+                                <div>
+                                    <p class="text-[1.05rem] font-semibold text-slate-900">Start: {{ $eventStartLabel }}</p>
+                                    <p class="mt-1 text-[1rem] text-slate-500">End: {{ $eventEndLabel }}</p>
+                                </div>
                             </div>
                             <div class="flex items-start gap-4">
                                 <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-600"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20.5s6.5-5.8 6.5-11A6.5 6.5 0 0 0 5.5 9.5c0 5.2 6.5 11 6.5 11Z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><path d="M12 12.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></div>
@@ -117,7 +125,6 @@
                             @endif
                             <div class="min-w-0 flex-1">
                                 <div class="flex flex-wrap items-center gap-3"><h2 class="text-[1.35rem] font-bold text-slate-900">{{ $organiserName }}</h2>@if(($event->organiser->is_approved ?? false))<span class="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">Verified</span>@endif</div>
-                                <p class="mt-1 text-[1rem] text-slate-500">{{ $event->organiser->email ?: 'No Email Found' }}</p>
                                 <p class="mt-4 max-w-3xl text-[1rem] leading-7 text-slate-500">{{ $organiserBio }}</p>
                                 <!-- <div class="mt-5 flex flex-wrap items-center gap-3">@if($event->organiser->website ?? false)<a href="{{ $event->organiser->website }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50">View Profile</a>@else<button type="button" class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50">View Profile</button>@endif<button type="button" class="text-sm font-medium text-slate-900">Follow</button></div> -->
                             </div>
@@ -142,7 +149,7 @@
                     </section>
                 </div>
 
-                <aside class="lg:sticky lg:top-24">
+                <aside class="lg:sticky lg:top-24" style="width : 25rem">
                     @if($event->isCancelled())
                         <div class="rounded-[24px] border border-red-200 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-6"><h2 class="text-[1.55rem] font-bold tracking-[-0.03em] text-slate-900 sm:text-[2rem]">Event Unavailable</h2><p class="mt-4 text-[1rem] leading-7 text-slate-500">{{ $event->cancellation_reason ?: 'This event has been cancelled by the organiser.' }}</p></div>
                     @elseif($event->starts_at->isPast())
@@ -164,26 +171,32 @@
                                             $initialQty = min($maxSelect, max(0, (int) data_get($oldItem, 'quantity', 0)));
                                         @endphp
                                         <div id="tier-card-{{ $tier->id }}" class="rounded-[18px] border bg-white p-4 transition {{ $soldOut ? 'border-slate-200 opacity-60' : ($initialQty > 0 ? 'border-violet-500 shadow-[0_0_0_3px_rgba(124,58,237,0.08)]' : 'border-slate-200') }}">
-                                            <div class="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
-                                                <div class="min-w-0 flex-1">
-                                                    <h3 class="truncate text-[1.02rem] font-semibold text-slate-900">{{ $tier->name }}</h3>
-                                                    <p class="mt-1 text-[0.98rem] leading-7 text-slate-500">{{ \Illuminate\Support\Str::limit($tier->description ?: 'Standard entry to all stages and event areas.', 64) }}</p>
+                                            <div class="space-y-2">
+                                                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                                    <div class="min-w-0 flex-1">
+                                                        <h3 class="truncate text-[1.02rem] font-semibold text-slate-900">
+                                                            {{ $tier->name }}
+                                                        </h3>
+                                                    </div>
+                                                    @if(!$soldOut)
+                                                        <div class="flex items-center gap-3 self-start sm:ml-4">
+                                                            <button type="button" onclick="changeQty({{ $tier->id }}, -1)" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-lg font-medium text-slate-500 hover:bg-slate-50">-</button>
+                                                            <span id="qty-display-{{ $tier->id }}" class="w-5 text-center text-[1.05rem] font-medium text-slate-900">{{ $initialQty }}</span>
+                                                            <button type="button" onclick="changeQty({{ $tier->id }}, 1)" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-lg font-medium text-slate-900 hover:bg-slate-50">+</button>
+                                                        </div>
+                                                        <input type="hidden" name="items[{{ $loop->index }}][ticket_tier_id]" value="{{ $tier->id }}">
+                                                        <input type="hidden" name="items[{{ $loop->index }}][quantity]" id="qty-{{ $tier->id }}" data-max="{{ $maxSelect }}" value="{{ $initialQty }}">
+                                                    @else
+                                                        <div class="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500">Sold Out</div>
+                                                        <input type="hidden" name="items[{{ $loop->index }}][ticket_tier_id]" value="{{ $tier->id }}">
+                                                        <input type="hidden" name="items[{{ $loop->index }}][quantity]" id="qty-{{ $tier->id }}" data-max="0" value="0">
+                                                    @endif
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <p class="mt-0 text-[0.98rem] leading-6 text-slate-500">{{ \Illuminate\Support\Str::limit($tier->description ?: 'Standard entry to all stages and event areas.', 64) }}</p>
                                                     <div class="mt-3 flex flex-wrap items-center gap-2"><span class="text-[1.08rem] font-bold text-violet-600">{{ $tier->price == 0 ? 'Free' : ticketly_money($tier->price) }}</span></div>
                                                     <p class="mt-1 text-xs text-slate-500">{{ $soldOut ? 'Sold out' : number_format($tier->available_quantity) . ' left' }}</p>
                                                 </div>
-                                                @if(!$soldOut)
-                                                    <div class="flex items-center gap-3 self-start sm:self-auto">
-                                                        <button type="button" onclick="changeQty({{ $tier->id }}, -1)" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-lg font-medium text-slate-500 hover:bg-slate-50">-</button>
-                                                        <span id="qty-display-{{ $tier->id }}" class="w-5 text-center text-[1.05rem] font-medium text-slate-900">{{ $initialQty }}</span>
-                                                        <button type="button" onclick="changeQty({{ $tier->id }}, 1)" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-lg font-medium text-slate-900 hover:bg-slate-50">+</button>
-                                                    </div>
-                                                    <input type="hidden" name="items[{{ $loop->index }}][ticket_tier_id]" value="{{ $tier->id }}">
-                                                    <input type="hidden" name="items[{{ $loop->index }}][quantity]" id="qty-{{ $tier->id }}" data-max="{{ $maxSelect }}" value="{{ $initialQty }}">
-                                                @else
-                                                    <div class="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500">Sold Out</div>
-                                                    <input type="hidden" name="items[{{ $loop->index }}][ticket_tier_id]" value="{{ $tier->id }}">
-                                                    <input type="hidden" name="items[{{ $loop->index }}][quantity]" id="qty-{{ $tier->id }}" data-max="0" value="0">
-                                                @endif
                                             </div>
                                         </div>
                                     @endforeach

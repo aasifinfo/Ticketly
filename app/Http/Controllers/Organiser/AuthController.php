@@ -29,11 +29,11 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validated = $request->validate([
-            'name'         => 'required|string|max:255',
-            'company_name' => 'nullable|string|max:255',
-            'email'        => 'required|email|unique:organisers,email',
+            'name'         => 'required|string|max:100',
+            'company_name' => 'nullable|string|max:150',
+            'email'        => 'required|email|max:150|unique:organisers,email',
             'password'     => 'required|string|min:8|confirmed',
-            'phone'        => 'required|string|max:30',
+            'phone'        => 'required|string|max:15|unique:organisers,phone',
         ]);
 
         $organiser = Organiser::create([

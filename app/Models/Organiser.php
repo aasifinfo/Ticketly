@@ -102,10 +102,24 @@ class Organiser extends Model implements Authenticatable
     // ── Logo URL ──────────────────────────────────────────────────
     public function getLogoUrlAttribute(): ?string
     {
-        if ($this->logo) {
-            return \Illuminate\Support\Facades\Storage::url($this->logo);
+        if (!$this->logo) {
+            return null;
         }
-        return null;
+
+        if (Str::startsWith($this->logo, ['http://', 'https://'])) {
+            return $this->logo;
+        }
+
+        if (Str::startsWith($this->logo, 'uploads/')) {
+            return asset($this->logo);
+        }
+
+        $publicCandidate = 'uploads/organisers/' . basename($this->logo);
+        if (file_exists(base_path($publicCandidate)) || file_exists(public_path($publicCandidate))) {
+            return asset($publicCandidate);
+        }
+
+        return \Illuminate\Support\Facades\Storage::url($this->logo);
     }
 
     public function getInitialsAttribute(): string

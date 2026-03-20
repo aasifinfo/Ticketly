@@ -44,11 +44,11 @@
       @endforeach
       <div class="border-t border-gray-800 pt-3 space-y-1.5 mt-3">
         <div class="flex justify-between text-sm text-gray-400"><span>Subtotal</span><span>{{ ticketly_money($booking->subtotal) }}</span></div>
+        <div class="flex justify-between text-sm text-gray-400"><span>Portal Fee</span><span>{{ ticketly_money($booking->portal_fee ?? 0) }}</span></div>
+        <div class="flex justify-between text-sm text-gray-400"><span>Service Fee</span><span>{{ ticketly_money($booking->service_fee) }}</span></div>
         @if($booking->discount_amount > 0)
         <div class="flex justify-between text-sm text-emerald-400"><span>Discount</span><span>-{{ ticketly_money($booking->discount_amount) }}</span></div>
         @endif
-        <div class="flex justify-between text-sm text-gray-400"><span>Portal Fee</span><span>{{ ticketly_money($booking->portal_fee ?? 0) }}</span></div>
-        <div class="flex justify-between text-sm text-gray-400"><span>Service Fee</span><span>{{ ticketly_money($booking->service_fee) }}</span></div>
         <div class="flex justify-between font-extrabold text-white text-base pt-2 border-t border-gray-700"><span>Total</span><span class="text-indigo-400">{{ ticketly_money($booking->total) }}</span></div>
       </div>
     </div>

@@ -1,9 +1,7 @@
 @extends('layouts.app')
 @php
-  $loginTitle = ($loginContext ?? null) === 'admin' ? 'Admin Sign In' : 'Sign In';
-  $loginSubtitle = ($loginContext ?? null) === 'admin'
-    ? 'Access the Ticketly admin panel'
-    : 'Access your event management dashboard';
+  $loginTitle = 'Sign In';
+  $loginSubtitle = 'Access your event management dashboard';
 @endphp
 @section('title', 'Sign In')
 @section('content')
@@ -45,11 +43,7 @@
         <div>
           <div class="flex items-center justify-between mb-1.5">
             <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Password</label>
-            @if(($loginContext ?? null) !== 'admin')
               <a href="{{ route('organiser.password.request') }}" class="text-xs text-indigo-400 hover:text-indigo-300">Forgot password?</a>
-            @else
-              <span class="text-xs text-gray-500">Contact support for reset</span>
-            @endif
           </div>
           <input type="password" name="password" required
                  class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="••••••••">
@@ -59,11 +53,7 @@
           Sign In →
         </button>
 
-        @if(($loginContext ?? null) !== 'admin')
         <p class="text-center text-xs text-gray-500">Don't have an account? <a href="{{ route('organiser.register') }}" class="text-indigo-400 hover:text-indigo-300">Register</a></p>
-        @else
-        <p class="text-center text-xs text-gray-500">Admins and organisers use this same sign-in page.</p>
-        @endif
       </form>
     </div>
   </div>

@@ -68,12 +68,6 @@
                             <span>Subtotal</span>
                             <span>{{ ticketly_money($booking->subtotal) }}</span>
                         </div>
-                        @if($booking->discount_amount > 0)
-                            <div class="mt-2 flex items-center justify-between text-emerald-600">
-                                <span>Discount{{ $booking->promoCode ? ' (' . $booking->promoCode->code . ')' : '' }}</span>
-                                <span>-{{ ticketly_money($booking->discount_amount) }}</span>
-                            </div>
-                        @endif
                         <div class="mt-2 flex items-center justify-between text-slate-600">
                             <span>Portal Fee</span>
                             <span>{{ ticketly_money($booking->portal_fee ?? 0) }}</span>
@@ -82,6 +76,12 @@
                             <span>Service Fee</span>
                             <span>{{ ticketly_money($booking->service_fee ?? 0) }}</span>
                         </div>
+                        @if($booking->discount_amount > 0)
+                            <div class="mt-2 flex items-center justify-between text-emerald-600">
+                                <span>Discount{{ $booking->promoCode ? ' (' . $booking->promoCode->code . ')' : '' }}</span>
+                                <span>-{{ ticketly_money($booking->discount_amount) }}</span>
+                            </div>
+                        @endif
                         <div class="mt-3 flex items-center justify-between border-t border-slate-300 pt-3 text-[1.18rem] font-extrabold text-slate-900">
                             <span>Total Paid</span>
                             <span class="text-violet-600">{{ ticketly_money($booking->total) }}</span>

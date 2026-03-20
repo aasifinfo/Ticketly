@@ -48,7 +48,7 @@
         <tr>
           <td class="py-3">
             <div class="text-white font-semibold">{{ $event->title }}</div>
-            <div class="text-xs text-gray-500">{{ $event->starts_at?->format('d M Y') }}</div>
+            <div class="text-xs text-gray-500">{{ $event->starts_at->format('l, F j, Y') }}</div>
           </td>
           <td class="py-3 text-gray-300">{{ $event->organiser?->name }}</td>
           <td class="py-3 text-gray-300">

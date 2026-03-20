@@ -6,6 +6,9 @@
 
 @section('head')
 <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 <style>
   .event-create-page {
     background-image: none !important;
@@ -28,6 +31,166 @@
     border-radius: 1rem;
     box-shadow: var(--event-card-shadow);
     padding: 1rem;
+  }
+
+  .event-overview-card {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .event-overview-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .event-overview-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+  }
+
+  .event-overview-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+  }
+
+  .event-live-badge,
+  .event-cancelled-note {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2rem;
+    padding: 0.42rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 800;
+    line-height: 1;
+    text-transform: capitalize;
+  }
+
+  .event-live-badge {
+    background: rgba(124, 58, 237, 0.12);
+    border: 1px solid rgba(124, 58, 237, 0.24);
+    color: #7c3aed;
+  }
+
+  .event-cancelled-note {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.18);
+    color: #dc2626;
+  }
+
+  .event-status-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.5rem;
+    padding: 0.68rem 1rem;
+    border-radius: 0.65rem;
+    border: 1px solid var(--event-input-border);
+    background: var(--event-input-bg);
+    color: var(--event-heading);
+    font-size: 0.78rem;
+    font-weight: 800;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .event-status-btn:hover {
+    transform: translateY(-1px);
+    border-color: rgba(124, 58, 237, 0.32);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  }
+
+  .event-status-btn--success {
+    border-color: rgba(16, 185, 129, 0.24);
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+  }
+
+  .event-status-btn--warning {
+    border-color: rgba(245, 158, 11, 0.24);
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+  }
+
+  .event-status-btn--danger {
+    border-color: rgba(239, 68, 68, 0.22);
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+  }
+
+  .event-preview-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .event-preview-thumb {
+    width: 8.5rem;
+    height: 5.8rem;
+    overflow: hidden;
+    border-radius: 0.85rem;
+    background: #e5e7eb;
+    flex-shrink: 0;
+  }
+
+  .event-preview-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .event-preview-caption {
+    max-width: 30rem;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    color: var(--event-muted);
+  }
+
+  .event-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(15, 23, 42, 0.58);
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .event-modal {
+    width: min(100%, 34rem);
+    border-radius: 1rem;
+    border: 1px solid var(--event-card-border);
+    background: var(--event-card-bg);
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+    padding: 1.15rem;
+  }
+
+  .event-modal h3 {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--event-heading);
+    margin-bottom: 0.45rem;
+  }
+
+  .event-modal p {
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--event-muted);
+    margin-bottom: 1rem;
   }
 
   .event-card__head {
@@ -121,6 +284,91 @@
     color: var(--event-placeholder);
   }
 
+  .event-datetime-wrap {
+    position: relative;
+  }
+
+  .event-input--datetime {
+    padding-right: 2.65rem;
+  }
+
+  .event-input--datetime::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 2.75rem;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .event-datetime-trigger {
+    position: absolute;
+    top: 50%;
+    right: 0.8rem;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--event-datetime-trigger);
+    cursor: pointer;
+  }
+
+  .event-datetime-trigger svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .flatpickr-calendar {
+    border-radius: 0.9rem;
+    border: 1px solid #d7dce5;
+    box-shadow: 0 22px 55px rgba(15, 23, 42, 0.18);
+    overflow: hidden;
+  }
+
+  .flatpickr-months,
+  .flatpickr-weekdays {
+    background: #f8fafc;
+  }
+
+  .flatpickr-current-month {
+    padding-top: 0.2rem;
+  }
+
+  .flatpickr-current-month .flatpickr-monthDropdown-months,
+  .flatpickr-current-month input.cur-year {
+    font-weight: 700;
+  }
+
+  .flatpickr-day.selected,
+  .flatpickr-day.startRange,
+  .flatpickr-day.endRange,
+  .flatpickr-day.selected:hover,
+  .flatpickr-day.startRange:hover,
+  .flatpickr-day.endRange:hover {
+    background: #7c3aed;
+    border-color: #7c3aed;
+  }
+
+  .flatpickr-time {
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .flatpickr-time input:hover,
+  .flatpickr-time .flatpickr-am-pm:hover,
+  .flatpickr-time input:focus,
+  .flatpickr-time .flatpickr-am-pm:focus,
+  .flatpickr-current-month .flatpickr-monthDropdown-months:hover,
+  .flatpickr-current-month input.cur-year:hover {
+    background: rgba(124, 58, 237, 0.08);
+  }
+
   .event-input:focus,
   .event-select:focus,
   .event-textarea:focus {
@@ -205,6 +453,12 @@
     color: var(--event-muted);
   }
 
+  .event-section-divider {
+    height: 1px;
+    background: var(--event-divider);
+    margin: 0.2rem 0 0.55rem;
+  }
+
   .event-lineup-list {
     display: grid;
     gap: 0.7rem;
@@ -220,8 +474,7 @@
   .event-icon-btn,
   .event-add-btn,
   .event-secondary-btn,
-  .event-primary-btn,
-  .event-status-btn {
+  .event-primary-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -241,13 +494,11 @@
   }
 
   .event-add-btn,
-  .event-secondary-btn,
-  .event-status-btn {
+  .event-secondary-btn {
     border: 1px solid var(--event-input-border);
     background: var(--event-input-bg);
     color: var(--event-heading);
     padding: 0.62rem 0.95rem;
-    text-decoration: none;
   }
 
   .event-primary-btn {
@@ -305,135 +556,6 @@
     white-space: nowrap;
   }
 
-  .event-overview-card {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .event-overview-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-
-  .event-overview-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-  }
-
-  .event-live-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 1.9rem;
-    border-radius: 0.55rem;
-    padding: 0.35rem 0.8rem;
-    background: linear-gradient(135deg, #a855f7, #7c3aed);
-    color: #ffffff;
-    font-size: 0.78rem;
-    font-weight: 700;
-    line-height: 1;
-    text-transform: lowercase;
-  }
-
-  .event-cancelled-note {
-    font-size: 0.76rem;
-    color: var(--event-muted);
-  }
-
-  .event-overview-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    flex-wrap: wrap;
-  }
-
-  .event-status-btn--success {
-    color: #059669;
-    border-color: rgba(5, 150, 105, 0.22);
-    background: rgba(5, 150, 105, 0.06);
-  }
-
-  .event-status-btn--warning {
-    color: #b45309;
-    border-color: rgba(217, 119, 6, 0.22);
-    background: rgba(245, 158, 11, 0.08);
-  }
-
-  .event-status-btn--danger {
-    color: #dc2626;
-    border-color: rgba(220, 38, 38, 0.2);
-    background: rgba(239, 68, 68, 0.06);
-  }
-
-  .event-preview-row {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-
-  .event-preview-thumb {
-    width: 7rem;
-    height: 4.7rem;
-    border-radius: 0.75rem;
-    overflow: hidden;
-    border: 1px solid var(--event-input-border);
-    background: linear-gradient(135deg, #6d28d9, #ec4899);
-    flex-shrink: 0;
-  }
-
-  .event-preview-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-
-  .event-preview-caption {
-    font-size: 0.72rem;
-    color: var(--event-muted);
-  }
-
-  .event-modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    background: rgba(2, 6, 23, 0.72);
-  }
-
-  .event-modal {
-    width: 100%;
-    max-width: 32rem;
-    background: var(--event-card-bg);
-    border: 1px solid rgba(220, 38, 38, 0.22);
-    border-radius: 1rem;
-    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
-    padding: 1.4rem;
-  }
-
-  .event-modal h3 {
-    margin: 0 0 0.5rem;
-    font-size: 1.05rem;
-    font-weight: 800;
-    color: var(--event-heading);
-  }
-
-  .event-modal p {
-    margin: 0 0 1rem;
-    font-size: 0.83rem;
-    line-height: 1.6;
-    color: var(--event-muted);
-  }
-
   .event-create-page .ck.ck-editor {
     width: 100%;
   }
@@ -475,14 +597,16 @@
     }
 
     .event-upload__body,
+    .event-overview-top,
     .event-status-wrap,
     .event-actions,
-    .event-card__head,
-    .event-overview-top,
-    .event-overview-actions,
-    .event-preview-row {
+    .event-card__head {
       flex-direction: column;
       align-items: stretch;
+    }
+
+    .event-overview-actions {
+      justify-content: stretch;
     }
 
     .event-hint {
@@ -497,11 +621,6 @@
 
     .event-icon-btn {
       width: 100%;
-    }
-
-    .event-preview-thumb {
-      width: 100%;
-      height: 10rem;
     }
   }
 
@@ -521,8 +640,7 @@
     .event-upload__action,
     .event-add-btn,
     .event-secondary-btn,
-    .event-primary-btn,
-    .event-status-btn {
+    .event-primary-btn {
       width: 100%;
     }
   }
@@ -539,6 +657,7 @@
     --event-input-bg: #ffffff;
     --event-input-border: #d7dce5;
     --event-placeholder: #9ca3af;
+    --event-datetime-trigger: #111827;
     --event-upload-bg: #ffffff;
   }
 
@@ -554,6 +673,7 @@
     --event-input-bg: #0f172a;
     --event-input-border: #334155;
     --event-placeholder: #64748b;
+    --event-datetime-trigger: #f8fafc;
     --event-upload-bg: #0f172a;
   }
 
@@ -561,6 +681,12 @@
   :root[data-theme='dark'] .event-status-chip {
     background: #0f172a;
   }
+
+  :root[data-theme='dark'] .event-status-btn {
+    background: #0f172a;
+  }
+
+
 </style>
 @endsection
 
@@ -576,6 +702,9 @@
         })->values()->all()
         : ($event->performer_lineup ?? [['name' => '', 'role' => '', 'time' => '']]);
     $canPreview = $event->status === 'published' && $event->approval_status === 'approved';
+    $previewUrl = $canPreview
+        ? route('events.show', $event->slug)
+        : route('organiser.events.show', $event->id);
 @endphp
 
 <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
@@ -620,9 +749,7 @@
         <button type="button" onclick="document.getElementById('cancel-modal').classList.remove('hidden')" class="event-status-btn event-status-btn--danger">Cancel Event</button>
       @endif
       <a href="{{ route('organiser.tiers.index', $event->id) }}" class="event-status-btn">Manage Tiers</a>
-      @if($canPreview)
-      <a href="{{ route('events.show', $event->slug) }}" target="_blank" class="event-status-btn">Preview</a>
-      @endif
+      <a href="{{ $previewUrl }}" target="_blank" class="event-status-btn">Preview</a>
     </div>
   </div>
 
@@ -740,11 +867,21 @@
   <div class="event-grid event-grid--2">
     <div class="event-field">
       <label class="event-label">Start Date &amp; Time *</label>
-      <input type="datetime-local" name="starts_at" value="{{ old('starts_at', $event->starts_at->format('Y-m-d\TH:i')) }}" required class="event-input">
+      <div class="event-datetime-wrap">
+        <input type="text" name="starts_at" value="{{ old('starts_at', $event->starts_at->format('Y-m-d\TH:i')) }}" required class="event-input event-input--datetime js-datetime-input" placeholder="Select start date and time" autocomplete="off">
+        <button type="button" class="event-datetime-trigger" onclick="openDateTimePicker(this)" aria-label="Open start date and time picker">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7.75 4.75v3.5m8.5-3.5v3.5M5 8.25h14M6.5 19.25h11a1.75 1.75 0 0 0 1.75-1.75v-9A1.75 1.75 0 0 0 17.5 6.75h-11A1.75 1.75 0 0 0 4.75 8.5v9A1.75 1.75 0 0 0 6.5 19.25Z"/></svg>
+        </button>
+      </div>
     </div>
     <div class="event-field">
       <label class="event-label">End Date &amp; Time *</label>
-      <input type="datetime-local" name="ends_at" value="{{ old('ends_at', $event->ends_at->format('Y-m-d\TH:i')) }}" required class="event-input">
+      <div class="event-datetime-wrap">
+        <input type="text" name="ends_at" value="{{ old('ends_at', $event->ends_at->format('Y-m-d\TH:i')) }}" required class="event-input event-input--datetime js-datetime-input" placeholder="Select end date and time" autocomplete="off">
+        <button type="button" class="event-datetime-trigger" onclick="openDateTimePicker(this)" aria-label="Open end date and time picker">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7.75 4.75v3.5m8.5-3.5v3.5M5 8.25h14M6.5 19.25h11a1.75 1.75 0 0 0 1.75-1.75v-9A1.75 1.75 0 0 0 17.5 6.75h-11A1.75 1.75 0 0 0 4.75 8.5v9A1.75 1.75 0 0 0 6.5 19.25Z"/></svg>
+        </button>
+      </div>
     </div>
   </div>
 </section>
@@ -847,7 +984,7 @@
 
 <div class="event-actions">
   <a href="{{ route('organiser.events.index') }}" class="event-secondary-btn">Cancel</a>
-  <button type="submit" class="event-primary-btn">
+  <button type="submit" id="submitBtn" class="event-primary-btn">
     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5.75 12.75 10 17l8.25-9.25"/></svg>
     <span>Save Changes</span>
   </button>
@@ -883,6 +1020,17 @@ ClassicEditor.create(document.querySelector('#description'), {
     toolbar: ['heading','|','bold','italic','link','bulletedList','numberedList','|','blockQuote','undo','redo'],
 }).catch(console.error);
 
+function openDateTimePicker(trigger) {
+    const input = trigger.closest('.event-datetime-wrap')?.querySelector('.js-datetime-input');
+    if (!input) return;
+    if (input._flatpickr) {
+        input._flatpickr.open();
+        return;
+    }
+    input.focus({ preventScroll: true });
+    input.click();
+}
+
 function addLineupRow() {
     const row = document.createElement('div');
     row.className = 'event-lineup-row lineup-row';
@@ -905,5 +1053,45 @@ function addLineupRow() {
     `;
     document.getElementById('lineup-rows').appendChild(row);
 }
+
+const form = document.querySelector('.event-create-form');
+const submitBtn = document.getElementById('submitBtn');
+
+form.addEventListener('submit', function () {
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.6';
+    submitBtn.innerHTML = 'Processing...';
+});
+
+window.addEventListener('load', function () {
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.innerHTML = 'Update Event';
+    }
+});
+
+document.querySelectorAll('.js-datetime-input').forEach((input) => {
+    flatpickr(input, {
+        enableTime: true,
+        time_24hr: false,
+        dateFormat: 'Y-m-d\\TH:i',
+        altInput: true,
+        altFormat: 'd-m-Y h:i K',
+        altInputClass: 'event-input event-input--datetime',
+        minuteIncrement: 5,
+        allowInput: true,
+        disableMobile: true,
+        monthSelectorType: 'dropdown',
+        nextArrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 6 6 6-6 6"/></svg>',
+        prevArrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m15 18-6-6 6-6"/></svg>',
+        onReady: function (_, __, instance) {
+            if (instance.altInput) {
+                instance.altInput.placeholder = '30-12-2026 12:45 AM';
+                instance.altInput.autocomplete = 'off';
+            }
+        },
+    });
+});
 </script>
 @endsection

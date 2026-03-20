@@ -35,19 +35,20 @@ class ServiceFeeCalculator
     /**
      * Return the pricing breakdown including discount.
      *
-     * @return array{subtotal: float, discount: float, discounted_subtotal: float, portal_fee: float, service_fee: float, total: float}
+     * @return array{subtotal: float, discount: float, gross_total: float, portal_fee: float, service_fee: float, total: float}
      */
     public static function total(float $subtotal, float $discount = 0.0): array
     {
-        $discountedSubtotal = max(0.0, round($subtotal - $discount, 2));
         $portalFee = self::portalFee($subtotal);
-        $serviceFee = self::fee($discountedSubtotal);
-        $total = round($discountedSubtotal + $portalFee + $serviceFee, 2);
+        $serviceFee = self::fee($subtotal);
+        $grossTotal = round($subtotal + $portalFee + $serviceFee, 2);
+        $appliedDiscount = min(max(0.0, round($discount, 2)), $grossTotal);
+        $total = max(0.0, round($grossTotal - $appliedDiscount, 2));
 
         return [
             'subtotal' => round($subtotal, 2),
-            'discount' => round($discount, 2),
-            'discounted_subtotal' => $discountedSubtotal,
+            'discount' => $appliedDiscount,
+            'gross_total' => $grossTotal,
             'portal_fee' => $portalFee,
             'service_fee' => $serviceFee,
             'total' => $total,

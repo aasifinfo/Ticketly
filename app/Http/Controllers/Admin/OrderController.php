@@ -126,10 +126,11 @@ class OrderController extends Controller
 
         $refundSubtotal = round(((float) $item->unit_price) * $refundQty, 2);
         $newSubtotal = max(0.0, round(((float) $booking->subtotal) - $refundSubtotal, 2));
+        $basePricing = ServiceFeeCalculator::total($newSubtotal);
 
         $discount = 0.0;
         if ($booking->promoCode) {
-            $discount = $booking->promoCode->calculateDiscount($newSubtotal);
+            $discount = $booking->promoCode->calculateDiscount($basePricing['gross_total']);
         }
 
         $pricing = ServiceFeeCalculator::total($newSubtotal, $discount);
@@ -162,7 +163,7 @@ class OrderController extends Controller
 
             $booking->update([
                 'subtotal' => $newSubtotal,
-                'discount_amount' => $discount,
+                'discount_amount' => $pricing['discount'],
                 'portal_fee' => $pricing['portal_fee'],
                 'service_fee' => $pricing['service_fee'],
                 'total' => $pricing['total'],
