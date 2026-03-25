@@ -52,7 +52,7 @@
     <div class="section">
       <div class="section-title">Event</div>
       <div class="event-name">{{ $reservation->event->title }}</div>
-      <div class="meta">📅 <span>{{ $reservation->event->starts_at->format('l, d F Y · g:ia') }}</span></div>
+      <div class="meta">📅 <span>{{ ticketly_format_datetime($reservation->event->starts_at) }}</span></div>
       <div class="meta">📍 <span>{{ $reservation->event->venue_name }}, {{ $reservation->event->city }}</span></div>
     </div>
 

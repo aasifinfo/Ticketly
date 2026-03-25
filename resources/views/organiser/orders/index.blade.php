@@ -51,6 +51,7 @@
       <tbody class="divide-y divide-gray-800">
         @forelse($orders as $order)
         @php
+          $ticketCount = max(1, (int) ($order->total_tickets ?? 0));
           $badgeVariant = match($order->status) {
             'paid' => 'badge--positive',
             'refunded', 'partially_refunded' => 'badge--accent',
@@ -69,13 +70,16 @@
           <td class="px-4 py-3 text-sm text-gray-300 max-w-[180px]">
             <div class="truncate">{{ $order->event->title ?? '—' }}</div>
           </td>
-          <td class="px-4 py-3 text-xs text-gray-400">{{ $order->created_at->format('d M Y') }}</td>
+          <td class="px-4 py-3 text-xs text-gray-400">{{ ticketly_format_date($order->created_at) }}</td>
           <td class="px-4 py-3">
             <span class="badge {{ $badgeVariant }}">
               {{ $order->status_badge['label'] }}
             </span>
           </td>
-          <td class="px-4 py-3 text-right font-bold text-white text-sm">{{ ticketly_money($order->total) }}</td>
+          <td class="px-4 py-3 text-right">
+            <div class="font-bold text-white text-sm">{{ ticketly_money($order->total) }}</div>
+            <div class="text-xs text-gray-500">{{ $ticketCount }} {{ $ticketCount === 1 ? 'ticket' : 'tickets' }}</div>
+          </td>
           <td class="px-4 py-3 text-right">
             <a href="{{ route('organiser.orders.show', $order->id) }}" class="text-xs font-semibold text-indigo-400 hover:text-indigo-300">View</a>
           </td>

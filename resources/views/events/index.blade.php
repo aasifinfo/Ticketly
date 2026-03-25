@@ -49,13 +49,19 @@
 
           <div>
             <h3 class="mb-3 text-xs font-bold uppercase tracking-wide text-gray-400">Date Range</h3>
-            <div class="space-y-2">
-              <input type="date" name="date_from" value="{{ request('date_from') }}"
-                     class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 max-[375px]:text-[13px]"
-                     aria-label="Date from">
-              <input type="date" name="date_to" value="{{ request('date_to') }}"
-                     class="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 max-[375px]:text-[13px]"
-                     aria-label="Date to">
+            <div class="grid gap-2">
+              <div class="grid gap-1">
+                <label for="date-from" class="text-xs font-semibold uppercase tracking-wide text-gray-500">From</label>
+                <input id="date-from" type="date" name="date_from" value="{{ request('date_from') }}"
+                       class="block w-full max-w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 max-[375px]:text-[13px]"
+                       aria-label="Date from">
+              </div>
+              <div class="grid gap-1">
+                <label for="date-to" class="text-xs font-semibold uppercase tracking-wide text-gray-500">To</label>
+                <input id="date-to" type="date" name="date_to" value="{{ request('date_to') }}"
+                       class="block w-full max-w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 max-[375px]:text-[13px]"
+                       aria-label="Date to">
+              </div>
             </div>
           </div>
 
@@ -112,6 +118,9 @@
 
   if (!form || !resultsEl) return;
 
+  const dateFromInput = form.querySelector('input[name="date_from"]');
+  const dateToInput = form.querySelector('input[name="date_to"]');
+
   let debounceTimer = null;
   let activeController = null;
 
@@ -136,6 +145,12 @@
     const expanded = !mobileFiltersPanel.classList.contains('hidden');
     mobileFiltersToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     mobileFiltersToggleIcon.textContent = expanded ? '−' : '+';
+  };
+
+  const syncDateRangeBounds = () => {
+    if (!dateFromInput || !dateToInput) return;
+    dateToInput.min = dateFromInput.value || '';
+    dateFromInput.max = dateToInput.value || '';
   };
 
   const fetchAndRender = async (url, pushState = true) => {
@@ -188,6 +203,7 @@
 
   form.querySelectorAll('select, input[type="radio"], input[type="date"], input[type="number"]').forEach((el) => {
     el.addEventListener('change', () => {
+      syncDateRangeBounds();
       syncClearFiltersVisibility();
       submitLive(true);
     });
@@ -221,10 +237,12 @@
   });
 
   window.addEventListener('popstate', () => {
+    syncDateRangeBounds();
     syncClearFiltersVisibility();
     fetchAndRender(window.location.href, false);
   });
 
+  syncDateRangeBounds();
   syncClearFiltersVisibility();
   syncMobileFiltersToggle();
 })();

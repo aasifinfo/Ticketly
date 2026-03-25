@@ -27,14 +27,24 @@ class ProfileController extends Controller
     {
         $organiser = $request->attributes->get('organiser');
 
+        $request->merge([
+            'phone' => trim((string) $request->input('phone')),
+            'email' => strtolower(trim((string) $request->email)),
+        ]);
+
         $validated = $request->validate([
             'name'         => 'required|string|max:255',
             'company_name' => 'required|string|max:255',
             'email'        => 'required|email|unique:organisers,email,' . $organiser->id,
-            'phone'        => 'nullable|string|max:30',
+            'phone'        => 'bail|required|digits:11|starts_with:07|unique:organisers,phone,' . $organiser->id,
             'website'      => 'nullable|url|max:255',
             'bio'          => 'nullable|string|max:2000',
             'logo'         => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+        ], [
+            'phone.required' => 'Phone number is required.',
+            'phone.digits' => 'Phone number must be exactly 11 digits and contain numbers only.',
+            'phone.starts_with' => 'Phone number must start with 07.',
+            'phone.unique' => 'This phone number is already registered.',
         ]);
 
         // Handle logo upload
@@ -60,11 +70,15 @@ class ProfileController extends Controller
 
         $validated = $request->validate([
             'current_password' => 'required|string',
-            'password'         => 'required|string|min:8|confirmed',
+            'password'         => 'required|string|min:8|max:15|confirmed',
         ]);
 
         if (!Hash::check($validated['current_password'], $organiser->password)) {
             return back()->withErrors(['current_password' => 'Current password is incorrect.']);
+        }
+
+        if (Hash::check($validated['password'], $organiser->password)) {
+            return back()->withErrors(['password' => 'You cannot use a previously used password. please Try with another password.']);
         }
 
         $organiser->update(['password' => Hash::make($validated['password'])]);

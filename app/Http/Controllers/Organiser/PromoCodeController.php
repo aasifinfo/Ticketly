@@ -198,7 +198,7 @@ class PromoCodeController extends Controller
         }
 
         $pricing = ServiceFeeCalculator::total((float) $request->subtotal);
-        $discount = $promo->calculateDiscount($pricing['gross_total']);
+        $discount = $promo->calculateDiscount((float) $request->subtotal);
 
         return response()->json([
             'valid'    => true,

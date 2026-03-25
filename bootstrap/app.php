@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(\App\Http\Middleware\VisitorTracking::class);
+        $middleware->append(\App\Http\Middleware\PreventBackHistory::class);
 
         $middleware->alias([
             'organiser.auth' => \App\Http\Middleware\OrganiserAuth::class,

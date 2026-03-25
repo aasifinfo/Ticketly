@@ -33,7 +33,7 @@
     </div> -->
   </section>
 
-  <section class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+  <!-- <section class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
     <h2 class="text-sm font-semibold text-white mb-4">System Tasks</h2>
     <p class="text-xs text-gray-500 mb-4">You can manually trigger scheduled tasks here.</p> 
     <form method="POST" action="{{ route('admin.dashboard.run-tasks') }}" class="inline">
@@ -42,7 +42,7 @@
         Run Scheduled Tasks
       </button>
     </form>
-  </section>
+  </section> -->
 
   <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
     <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
@@ -55,7 +55,7 @@
         <a href="{{ route('admin.events.show', $event->id) }}" class="flex items-center justify-between gap-3 border border-gray-800 rounded-xl p-3 hover:border-gray-700 transition">
           <div>
             <div class="text-sm font-semibold text-white">{{ $event->title }}</div>
-            <div class="text-xs text-gray-500">{{ $event->organiser?->name ?? 'Organiser' }} ·  {{ $event->starts_at->format('l, F j, Y') }}</div>
+            <div class="text-xs text-gray-500">{{ $event->organiser?->name ?? 'Organiser' }} ·  {{ ticketly_format_date($event->starts_at) }}</div>
           </div>
           <span class="badge {{ $event->approval_status === 'approved' ? 'badge--positive' : ($event->approval_status === 'rejected' ? 'badge--danger' : 'badge--warning') }}">
             {{ ucfirst($event->approval_status ?? 'pending') }}
@@ -85,7 +85,7 @@
           </div>
           <div class="text-right">
             <div class="text-sm font-semibold text-white">{{ ticketly_money($booking->total) }}</div>
-            <div class="text-xs text-gray-500">{{ ucfirst($booking->status) }}</div>
+            <div class="text-xs text-gray-500">{{ $booking->status_badge['label'] }}</div>
           </div>
         @if($booking)
         </a>

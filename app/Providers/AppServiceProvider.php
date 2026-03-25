@@ -47,14 +47,26 @@ class AppServiceProvider extends ServiceProvider
                 config(['mail.from.name' => $settings['mail_from_name']]);
                 config(['notifications.from_name' => $settings['mail_from_name']]);
             }
-            if (array_key_exists('stripe_key', $settings)) {
-                config(['services.stripe.key' => $settings['stripe_key']]);
+            $stripeKey = is_string($settings['stripe_key'] ?? null) ? trim($settings['stripe_key']) : null;
+            $stripeSecret = is_string($settings['stripe_secret'] ?? null) ? trim($settings['stripe_secret']) : null;
+            $hasStripePair = ($stripeKey !== null && $stripeKey !== '')
+                && ($stripeSecret !== null && $stripeSecret !== '');
+
+            if ($hasStripePair) {
+                $keyMode = str_starts_with($stripeKey, 'pk_live_') ? 'live' : (str_starts_with($stripeKey, 'pk_test_') ? 'test' : null);
+                $secretMode = str_starts_with($stripeSecret, 'sk_live_') ? 'live' : (str_starts_with($stripeSecret, 'sk_test_') ? 'test' : null);
+
+                if ($keyMode !== null && $secretMode !== null && $keyMode === $secretMode) {
+                    config(['services.stripe.key' => $stripeKey]);
+                    config(['services.stripe.secret' => $stripeSecret]);
+                } else {
+                    logger()->warning('[Config] Ignoring Stripe settings from system_settings due to invalid/mismatched key pair.');
+                }
             }
-            if (array_key_exists('stripe_secret', $settings)) {
-                config(['services.stripe.secret' => $settings['stripe_secret']]);
-            }
-            if (array_key_exists('stripe_webhook_secret', $settings)) {
-                config(['services.stripe.webhook_secret' => $settings['stripe_webhook_secret']]);
+
+            $stripeWebhookSecret = is_string($settings['stripe_webhook_secret'] ?? null) ? trim($settings['stripe_webhook_secret']) : null;
+            if ($stripeWebhookSecret !== null && $stripeWebhookSecret !== '') {
+                config(['services.stripe.webhook_secret' => $stripeWebhookSecret]);
             }
         }
 

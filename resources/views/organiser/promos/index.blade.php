@@ -40,7 +40,7 @@
             {{ $promo->used_count }}{{ $promo->max_uses ? '/' . $promo->max_uses : '' }}
           </td>
           <td class="px-4 py-3 text-xs text-gray-400">
-            {{ $promo->expires_at ? $promo->expires_at->format('d M Y') : '-' }}
+            {{ $promo->expires_at ? ticketly_format_date($promo->expires_at) : '-' }}
           </td>
           <td class="px-4 py-3">
             @php

@@ -112,6 +112,116 @@ class TicketReservationRepository
     }
 
     /**
+     * Update an existing active reservation without releasing the holder's current inventory first.
+     */
+    public function updateHold(Reservation $reservation, array $items): Reservation
+    {
+        return DB::transaction(function () use ($reservation, $items) {
+            $reservation = Reservation::whereKey($reservation->id)
+                ->lockForUpdate()
+                ->with('items')
+                ->firstOrFail();
+
+            if ($reservation->status !== 'pending' || $reservation->isExpired()) {
+                throw new \RuntimeException('Your ticket hold is no longer active. Please select tickets again.');
+            }
+
+            $requested = collect($items)
+                ->groupBy(fn ($item) => (int) $item['ticket_tier_id'])
+                ->map(fn ($group) => (int) collect($group)->sum(fn ($item) => (int) $item['quantity']));
+
+            $currentItems = $reservation->items->keyBy('ticket_tier_id');
+            $tierIds = $currentItems->keys()->merge($requested->keys())->unique()->values();
+
+            $tiers = TicketTier::whereIn('id', $tierIds)
+                ->where('event_id', $reservation->event_id)
+                ->where('is_active', true)
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            foreach ($tierIds as $tierId) {
+                $currentQty = (int) optional($currentItems->get($tierId))->quantity;
+                $newQty = (int) ($requested->get($tierId, 0));
+
+                if ($newQty === 0) {
+                    continue;
+                }
+
+                $tier = $tiers->get($tierId);
+                if (!$tier) {
+                    throw new \RuntimeException("Ticket tier {$tierId} not found or inactive.");
+                }
+
+                if ($newQty < $tier->min_per_order || $newQty > $tier->max_per_order) {
+                    throw new \RuntimeException(
+                        "'{$tier->name}' requires between {$tier->min_per_order} and {$tier->max_per_order} tickets per order."
+                    );
+                }
+
+                $delta = $newQty - $currentQty;
+                if ($delta > 0 && $tier->available_quantity < $delta) {
+                    throw new \RuntimeException(
+                        "Sorry, only {$tier->available_quantity} additional ticket(s) available for '{$tier->name}'."
+                    );
+                }
+            }
+
+            $subtotal = 0.0;
+
+            foreach ($tierIds as $tierId) {
+                $currentItem = $currentItems->get($tierId);
+                $currentQty = (int) optional($currentItem)->quantity;
+                $newQty = (int) ($requested->get($tierId, 0));
+                $delta = $newQty - $currentQty;
+                $tier = $tiers->get($tierId);
+
+                if ($delta > 0 && $tier) {
+                    $tier->decrement('available_quantity', $delta);
+                } elseif ($delta < 0 && $tier) {
+                    $tier->increment('available_quantity', abs($delta));
+                }
+
+                if ($newQty <= 0) {
+                    $currentItem?->delete();
+                    continue;
+                }
+
+                $lineSubtotal = round((float) $tier->price * $newQty, 2);
+                $subtotal += $lineSubtotal;
+
+                if ($currentItem) {
+                    $currentItem->update([
+                        'quantity' => $newQty,
+                        'unit_price' => (float) $tier->price,
+                        'subtotal' => $lineSubtotal,
+                    ]);
+                } else {
+                    ReservationItem::create([
+                        'reservation_id' => $reservation->id,
+                        'ticket_tier_id' => $tierId,
+                        'quantity' => $newQty,
+                        'unit_price' => (float) $tier->price,
+                        'subtotal' => $lineSubtotal,
+                    ]);
+                }
+            }
+
+            $reservation->update([
+                'subtotal' => $subtotal,
+            ]);
+
+            Log::info('[TicketReservationRepository] Hold updated', [
+                'reservation' => $reservation->token,
+                'event' => $reservation->event_id,
+                'items' => $requested->filter(fn ($qty) => $qty > 0)->count(),
+            ]);
+
+            return $reservation->fresh('items.ticketTier');
+        });
+    }
+
+    /**
      * Release a pending reservation and restore inventory.
      */
     public function release(Reservation $reservation): bool

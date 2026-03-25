@@ -4,15 +4,13 @@ namespace App\Services;
 
 use App\Models\Organiser;
 use Stripe\StripeClient;
+use RuntimeException;
 
 class StripeConnectService
 {
-    private StripeClient $client;
+    public const MISSING_SECRET_MESSAGE = 'Stripe secret key is not configured.';
 
-    public function __construct()
-    {
-        $this->client = new StripeClient(config('services.stripe.secret'));
-    }
+    private ?StripeClient $client = null;
 
     public function ensureExpressAccount(Organiser $organiser): string
     {
@@ -20,7 +18,7 @@ class StripeConnectService
             return $organiser->stripe_account_id;
         }
 
-        $account = $this->client->accounts->create([
+        $account = $this->client()->accounts->create([
             'type'  => 'express',
             'email' => $organiser->email,
             'capabilities' => [
@@ -39,7 +37,7 @@ class StripeConnectService
 
     public function createOnboardingLink(string $accountId, string $refreshUrl, string $returnUrl): string
     {
-        $link = $this->client->accountLinks->create([
+        $link = $this->client()->accountLinks->create([
             'account'     => $accountId,
             'refresh_url' => $refreshUrl,
             'return_url'  => $returnUrl,
@@ -56,7 +54,7 @@ class StripeConnectService
             return false;
         }
 
-        $account = $this->client->accounts->retrieve($organiser->stripe_account_id, []);
+        $account = $this->client()->accounts->retrieve($organiser->stripe_account_id, []);
         $complete = (bool) ($account->details_submitted ?? false);
         $chargesEnabled = (bool) ($account->charges_enabled ?? false);
         $payoutsEnabled = (bool) ($account->payouts_enabled ?? false);
@@ -65,5 +63,23 @@ class StripeConnectService
         $organiser->update(['stripe_onboarding_complete' => $isComplete]);
 
         return $isComplete;
+    }
+
+    private function client(): StripeClient
+    {
+        if ($this->client instanceof StripeClient) {
+            return $this->client;
+        }
+
+        $secret = config('services.stripe.secret');
+        $secret = is_string($secret) ? trim($secret) : '';
+
+        if ($secret === '') {
+            throw new RuntimeException(self::MISSING_SECRET_MESSAGE);
+        }
+
+        $this->client = new StripeClient($secret);
+
+        return $this->client;
     }
 }

@@ -59,7 +59,7 @@
             <td class="py-3 text-gray-300">{{ $booking->event?->title }}</td>
             <td class="py-3 text-gray-300">{{ ticketly_money($booking->total) }}</td>
             <td class="py-3 text-gray-400">{{ ucfirst($booking->status) }}</td>
-            <td class="py-3 text-gray-500 text-right">{{ $booking->created_at->format('d M Y') }}</td>
+            <td class="py-3 text-gray-500 text-right">{{ ticketly_format_date($booking->created_at) }}</td>
           </tr>
           @empty
           <tr>

@@ -38,6 +38,7 @@
       @endif
       <a href="{{ route('organiser.events.edit', $event->id) }}" class="inline-flex w-full items-center justify-center text-xs font-semibold text-indigo-400 border border-indigo-500/30 px-3 py-2 rounded-lg hover:bg-indigo-600/10 transition-colors sm:w-auto">Edit Event</a>
       <a href="{{ route('organiser.tiers.index', $event->id) }}" class="inline-flex w-full items-center justify-center text-xs font-semibold text-indigo-400 border border-indigo-500/30 px-3 py-2 rounded-lg hover:bg-indigo-600/10 transition-colors sm:w-auto">Manage Tiers</a>
+        <a href="{{ route('organiser.sponsorships.index', $event->id) }}" class="inline-flex w-full items-center justify-center text-xs font-semibold text-indigo-400 border border-indigo-500/30 px-3 py-2 rounded-lg hover:bg-indigo-600/10 transition-colors sm:w-auto">Manage Sponsorship</a>
       
       
       
@@ -110,20 +111,20 @@
               </div>
               <div>
                 <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Start Date</div>
-                <div class="text-white">{{ $event->starts_at->format('D, d M Y') }}</div>
+                <div class="text-white">{{ ticketly_format_date($event->starts_at) }}</div>
               </div>
               <div>
                 <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Start Time</div>
-                <div class="text-white">{{ $event->starts_at->format('h:i A') }}</div>
+                <div class="text-white">{{ ticketly_format_time($event->starts_at) }}</div>
               </div>
               <div>
                 <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">End Date</div>
-                <div class="text-white">{{ $sameDayEvent ? 'Same day' : $event->ends_at->format('D, d M Y') }}</div>
+                <div class="text-white">{{ $sameDayEvent ? 'Same day' : ticketly_format_date($event->ends_at) }}</div>
               </div>
               
               <div>
                 <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">End Time</div>
-                <div class="text-white">{{ $event->ends_at->format('h:i A') }}</div>
+                <div class="text-white">{{ ticketly_format_time($event->ends_at) }}</div>
               </div>
               <div>
                 <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Venue</div>

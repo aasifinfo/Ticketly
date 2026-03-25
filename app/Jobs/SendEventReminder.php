@@ -89,7 +89,7 @@ class SendEventReminder implements ShouldQueue
         // SMS reminder
         if ($booking->customer_phone) {
             $label   = $this->getReminderLabel();
-            $date    = $booking->event->starts_at->format('D d M, g:ia');
+            $date    = ticketly_format_datetime($booking->event->starts_at);
             $smsBody = "Ticketly Reminder - {$label}\n"
                 . "{$booking->event->title}\n"
                 . "Date: {$date}\n"

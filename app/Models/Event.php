@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class Event extends Model
@@ -23,7 +24,7 @@ class Event extends Model
 
     protected $fillable = [
         'organiser_id', 'title', 'slug', 'short_description', 'description',
-        'banner', 'category', 'starts_at', 'ends_at',
+        'banner', 'category', 'starts_at', 'ends_at', 'ticket_validation_starts_at', 'ticket_validation_ends_at',
         'venue_name', 'venue_address', 'city', 'country', 'postcode',
         'parking_info', 'performer_lineup', 'refund_policy',
         'status', 'cancelled_at', 'cancellation_reason',
@@ -35,6 +36,8 @@ class Event extends Model
     protected $casts = [
         'starts_at'        => 'datetime',
         'ends_at'          => 'datetime',
+        'ticket_validation_starts_at' => 'datetime',
+        'ticket_validation_ends_at' => 'datetime',
         'cancelled_at'     => 'datetime',
         'approved_at'      => 'datetime',
         'rejected_at'      => 'datetime',
@@ -56,25 +59,50 @@ class Event extends Model
     {
         $base = Str::slug($title);
         $slug = $base;
-        $i    = 2;
+        $i = 2;
+
         while (static::where('slug', $slug)->exists()) {
             $slug = $base . '-' . $i++;
         }
+
         return $slug;
     }
 
-    // ── Relationships ─────────────────────────────────────────────
-    public function organiser()   { return $this->belongsTo(Organiser::class); }
-    public function ticketTiers() { return $this->hasMany(TicketTier::class)->orderBy('sort_order'); }
-    public function bookings()    { return $this->hasMany(Booking::class); }
+    public function organiser()
+    {
+        return $this->belongsTo(Organiser::class);
+    }
+
+    public function ticketTiers()
+    {
+        return $this->hasMany(TicketTier::class)->orderBy('sort_order');
+    }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
+
     public function bookingItems()
     {
         return $this->hasManyThrough(BookingItem::class, Booking::class, 'event_id', 'booking_id', 'id', 'id');
     }
-    public function reservations(){ return $this->hasMany(Reservation::class); }
-    public function promoCodes()  { return $this->hasMany(PromoCode::class); }
 
-    // ── Accessors ─────────────────────────────────────────────────
+    public function reservations()
+    {
+        return $this->hasMany(Reservation::class);
+    }
+
+    public function promoCodes()
+    {
+        return $this->hasMany(PromoCode::class);
+    }
+
+    public function sponsorships()
+    {
+        return $this->hasMany(Sponsorship::class)->orderBy('name');
+    }
+
     public function getBannerUrlAttribute(): ?string
     {
         if (!$this->banner) {
@@ -100,38 +128,98 @@ class Event extends Model
     public function getLowestPriceAttribute(): float
     {
         $min = $this->ticketTiers()->where('is_active', true)->min('price');
+
         return $min ?? 0;
     }
 
     public function getHighestPriceAttribute(): float
     {
         $max = $this->ticketTiers()->where('is_active', true)->max('price');
+
         return $max ?? 0;
     }
 
     public function getFormattedDateAttribute(): string
     {
-        return $this->starts_at->format('D, d M Y');
+        return ticketly_format_date($this->starts_at);
     }
 
     public function getFormattedTimeAttribute(): string
     {
-        return $this->starts_at->format('g:ia') . ' – ' . $this->ends_at->format('g:ia');
+        return ticketly_format_time($this->starts_at) . ' - ' . ticketly_format_time($this->ends_at);
     }
 
-    // ── State helpers ─────────────────────────────────────────────
-    public function isPublished(): bool  { return $this->status === 'published'; }
-    public function isDraft(): bool      { return $this->status === 'draft'; }
-    public function isCancelled(): bool  { return $this->status === 'cancelled'; }
-    public function isApproved(): bool   { return $this->approval_status === 'approved'; }
+    public function ticketValidationStartsAt(): ?CarbonInterface
+    {
+        if ($this->ticket_validation_starts_at) {
+            return $this->ticket_validation_starts_at;
+        }
+
+        return $this->starts_at?->copy()->subHours(2);
+    }
+
+    public function ticketValidationEndsAt(): ?CarbonInterface
+    {
+        if ($this->ticket_validation_ends_at) {
+            return $this->ticket_validation_ends_at;
+        }
+
+        return $this->ends_at;
+    }
+
+    public function ticketValidationStatus(?CarbonInterface $moment = null): string
+    {
+        $moment = $moment ?? now();
+
+        if ($this->isCancelled()) {
+            return 'cancelled';
+        }
+
+        $validationStartsAt = $this->ticketValidationStartsAt();
+        $validationEndsAt = $this->ticketValidationEndsAt();
+
+        if (!$validationStartsAt || !$validationEndsAt) {
+            return 'closed';
+        }
+
+        if ($moment->lt($validationStartsAt)) {
+            return 'before_window';
+        }
+
+        if ($moment->gt($validationEndsAt)) {
+            return 'after_window';
+        }
+
+        return 'open';
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->status === 'published';
+    }
+
+    public function isDraft(): bool
+    {
+        return $this->status === 'draft';
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->status === 'cancelled';
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->approval_status === 'approved';
+    }
 
     public function getStatusBadgeAttribute(): array
     {
-        return match($this->status) {
-            'published'   => ['label' => 'Published',   'class' => 'badge--positive'],
-            'draft'       => ['label' => 'Draft',       'class' => 'badge--warning'],
-            'cancelled'   => ['label' => 'Cancelled',   'class' => 'badge--danger'],
-            default       => ['label' => ucfirst($this->status), 'class' => 'badge--neutral'],
+        return match ($this->status) {
+            'published' => ['label' => 'Published', 'class' => 'badge--positive'],
+            'draft' => ['label' => 'Draft', 'class' => 'badge--warning'],
+            'cancelled' => ['label' => 'Cancelled', 'class' => 'badge--danger'],
+            default => ['label' => ucfirst($this->status), 'class' => 'badge--neutral'],
         };
     }
 }

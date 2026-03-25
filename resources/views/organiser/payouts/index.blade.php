@@ -30,11 +30,13 @@
 
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
   <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-    <div class="text-xs text-gray-500 mb-1">Paid Out (on this page)</div>
+    <div class="text-xs text-gray-500 mb-1">
+      {{ $canReceivePayouts ? 'Paid Out' : 'Paid Out (available after Stripe setup)' }}
+    </div>
     <div class="text-2xl font-extrabold text-white">{{ ticketly_money_code($summary['paid_out_amount']) }}</div>
   </div>
   <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-    <div class="text-xs text-gray-500 mb-1">Pending (on this page)</div>
+    <div class="text-xs text-gray-500 mb-1">Pending</div>
     <div class="text-2xl font-extrabold text-white">{{ ticketly_money_code($summary['pending_amount']) }}</div>
   </div>
 </div>
@@ -49,7 +51,9 @@
 
   <select name="status" class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
     <option value="">All Statuses</option>
+    @if($canReceivePayouts)
     <option value="paid_out" {{ request('status') === 'paid_out' ? 'selected' : '' }}>Paid Out</option>
+    @endif
     <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
   </select>
 
@@ -78,7 +82,7 @@
       <tbody class="divide-y divide-gray-800">
         @forelse($payouts as $payout)
         <tr class="hover:bg-gray-800/30 transition-colors">
-          <td class="px-4 py-3 text-sm text-gray-200">{{ \Carbon\Carbon::parse($payout->payout_date)->format('d M Y') }}</td>
+          <td class="px-4 py-3 text-sm text-gray-200">{{ ticketly_format_date($payout->payout_date) }}</td>
           <td class="px-4 py-3 text-sm font-bold text-white">{{ ticketly_money_code((float) $payout->amount) }}</td>
           <td class="px-4 py-3 text-sm text-gray-300">{{ Str::limit($payout->event_title, 45) }}</td>
           <td class="px-4 py-3">

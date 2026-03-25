@@ -37,8 +37,11 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div>
           <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Phone</label>
-          <input type="tel" name="phone" value="{{ old('phone', $organiser->phone) }}"
-                 class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="+44 7700 900000">
+          <input type="tel" name="phone" id="phone" value="{{ old('phone', $organiser->phone) }}"
+                 maxlength="11" minlength="11" inputmode="numeric" pattern="07[0-9]{9}" title="Enter exactly 11 digits starting with 07" required
+                 class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="07123456789">
+          <p class="text-xs text-gray-500 mt-1">Enter exactly 11 digits starting with 07. Numbers only, with no spaces or symbols.</p>
+          <p class="text-red-500 text-xs mt-1 hidden input-error"></p>
         </div>
         <div>
           <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Website</label>
@@ -73,4 +76,89 @@
     </form>
   </div>
 </div>
+
+<script>
+const phoneInput = document.getElementById('phone');
+
+if (phoneInput) {
+    const phoneError = phoneInput.parentElement.querySelector('.input-error');
+    const invalidFormatMessage = 'Phone number must be exactly 11 digits and contain numbers only.';
+    const invalidPrefixMessage = 'Phone number must start with 07.';
+
+    const sanitizePhoneValue = (value) => value.replace(/\D/g, '').slice(0, 11);
+
+    const updatePhoneError = (value) => {
+        if (!phoneError) {
+            return;
+        }
+
+        if (value.length === 0) {
+            phoneInput.setCustomValidity('');
+            phoneError.classList.add('hidden');
+            phoneError.textContent = '';
+            return;
+        }
+
+        if (value.length >= 2 && !value.startsWith('07')) {
+            phoneInput.setCustomValidity(invalidPrefixMessage);
+            phoneError.textContent = invalidPrefixMessage;
+            phoneError.classList.remove('hidden');
+            return;
+        }
+
+        if (value.length !== 11) {
+            phoneInput.setCustomValidity(invalidFormatMessage);
+            phoneError.textContent = invalidFormatMessage;
+            phoneError.classList.remove('hidden');
+            return;
+        }
+
+        phoneInput.setCustomValidity('');
+        phoneError.classList.add('hidden');
+        phoneError.textContent = '';
+    };
+
+    const handlePhoneInput = () => {
+        const sanitizedValue = sanitizePhoneValue(phoneInput.value);
+        if (phoneInput.value !== sanitizedValue) {
+            phoneInput.value = sanitizedValue;
+        }
+
+        updatePhoneError(phoneInput.value);
+    };
+
+    phoneInput.addEventListener('beforeinput', function (event) {
+        if (event.data && /\D/.test(event.data)) {
+            event.preventDefault();
+        }
+    });
+
+    phoneInput.addEventListener('keydown', function (event) {
+        if (event.key === ' ') {
+            event.preventDefault();
+        }
+    });
+
+    phoneInput.addEventListener('paste', function (event) {
+        event.preventDefault();
+        const pastedText = event.clipboardData?.getData('text') ?? '';
+        const sanitizedValue = sanitizePhoneValue(pastedText);
+        const start = this.selectionStart ?? this.value.length;
+        const end = this.selectionEnd ?? this.value.length;
+        const nextValue = sanitizePhoneValue(
+            this.value.slice(0, start) + sanitizedValue + this.value.slice(end)
+        );
+
+        this.value = nextValue;
+        updatePhoneError(this.value);
+    });
+
+    phoneInput.addEventListener('input', handlePhoneInput);
+    phoneInput.addEventListener('invalid', function () {
+        updatePhoneError(this.value);
+    });
+
+    updatePhoneError(phoneInput.value);
+}
+</script>
 @endsection

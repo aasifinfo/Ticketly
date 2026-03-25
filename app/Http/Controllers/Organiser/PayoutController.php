@@ -20,6 +20,7 @@ class PayoutController extends Controller
     public function index(Request $request)
     {
         $organiser = $request->attributes->get('organiser');
+        $canReceivePayouts = !empty($organiser->stripe_account_id) && (bool) $organiser->stripe_onboarding_complete;
         $paidStatuses = ['paid', 'partially_refunded'];
         $countStatuses = ['paid', 'partially_refunded', 'refunded'];
         $events    = Event::where('organiser_id', $organiser->id)
@@ -56,13 +57,22 @@ class PayoutController extends Controller
                     [$validated['date_to']]
                 );
             })
-            ->when(($validated['status'] ?? null) === 'pending', function ($q) {
+            ->when(($validated['status'] ?? null) === 'pending', function ($q) use ($canReceivePayouts) {
+                if (!$canReceivePayouts) {
+                    return;
+                }
+
                 $q->whereRaw(
                     'DATE(DATE_ADD(bookings.created_at, INTERVAL ' . $this->settlementDays . ' DAY)) > ?',
                     [now()->toDateString()]
                 );
             })
-            ->when(($validated['status'] ?? null) === 'paid_out', function ($q) {
+            ->when(($validated['status'] ?? null) === 'paid_out', function ($q) use ($canReceivePayouts) {
+                if (!$canReceivePayouts) {
+                    $q->whereRaw('1 = 0');
+                    return;
+                }
+
                 $q->whereRaw(
                     'DATE(DATE_ADD(bookings.created_at, INTERVAL ' . $this->settlementDays . ' DAY)) <= ?',
                     [now()->toDateString()]
@@ -81,8 +91,8 @@ class PayoutController extends Controller
             ->orderByDesc('payout_date');
 
         $payouts = $query->paginate(20)->withQueryString();
-        $payouts->getCollection()->transform(function ($row) {
-            $isPaidOut = $row->payout_date <= now()->toDateString();
+        $payouts->getCollection()->transform(function ($row) use ($canReceivePayouts) {
+            $isPaidOut = $canReceivePayouts && $row->payout_date <= now()->toDateString();
             $row->status = $isPaidOut ? 'paid_out' : 'pending';
             $row->status_label = $isPaidOut ? 'Paid Out' : 'Pending';
             $row->status_class = $isPaidOut ? 'badge--positive' : 'badge--warning';
@@ -105,6 +115,7 @@ class PayoutController extends Controller
             'selectedEventId' => $selectedEventId,
             'summary'         => $summary,
             'settlementDays'  => $this->settlementDays,
+            'canReceivePayouts' => $canReceivePayouts,
         ]);
     }
 }

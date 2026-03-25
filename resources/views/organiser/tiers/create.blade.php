@@ -27,10 +27,16 @@
     </div>
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <div><label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Min Per Order</label>
-      <input type="number" name="min_per_order" value="{{ old('min_per_order', 1) }}" min="1" max="20" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"></div>
-      <div><label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Max Per Order</label>
-      <input type="number" name="max_per_order" value="{{ old('max_per_order', 10) }}" min="1" max="20" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"></div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Min Per Order</label>
+        <input type="number" name="min_per_order" value="{{ old('min_per_order', 1) }}" min="1" step="1" inputmode="numeric" required aria-describedby="min_per_order-error" class="w-full bg-gray-800 border {{ $errors->has('min_per_order') ? 'border-rose-500/60 focus:ring-rose-500' : 'border-gray-700 focus:ring-indigo-500' }} rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2">
+        <p id="min_per_order-error" class="mt-2 text-sm text-rose-400 {{ $errors->has('min_per_order') ? '' : 'hidden' }}">{{ $errors->first('min_per_order') }}</p>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Max Per Order</label>
+        <input type="number" name="max_per_order" value="{{ old('max_per_order', 10) }}" min="10" step="1" inputmode="numeric" required aria-describedby="max_per_order-error" class="w-full bg-gray-800 border {{ $errors->has('max_per_order') ? 'border-rose-500/60 focus:ring-rose-500' : 'border-gray-700 focus:ring-indigo-500' }} rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2">
+        <p id="max_per_order-error" class="mt-2 text-sm text-rose-400 {{ $errors->has('max_per_order') ? '' : 'hidden' }}">{{ $errors->first('max_per_order') }}</p>
+      </div>
     </div>
 
     <div class="flex items-center gap-3">
@@ -46,4 +52,80 @@
   </form>
 </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const rules = {
+    min_per_order: {
+      min: 1,
+      required: 'Minimum per order is required.',
+      invalid: 'Minimum per order must be at least 1.',
+    },
+    max_per_order: {
+      min: 10,
+      required: 'Max per order is required.',
+      invalid: 'Max per order must be at least 10.',
+    },
+  };
+
+  Object.entries(rules).forEach(function ([fieldName, rule]) {
+    const field = document.querySelector('input[name="' + fieldName + '"]');
+    const error = document.getElementById(fieldName + '-error');
+
+    if (!field || !error) {
+      return;
+    }
+
+    const applyFieldState = function (hasError) {
+      field.classList.toggle('border-rose-500/60', hasError);
+      field.classList.toggle('focus:ring-rose-500', hasError);
+      field.classList.toggle('border-gray-700', !hasError);
+      field.classList.toggle('focus:ring-indigo-500', !hasError);
+    };
+
+    const syncValidationState = function () {
+      const rawValue = field.value.trim();
+      let message = '';
+      const numericValue = Number(rawValue);
+
+      if (rawValue !== '' && !Number.isFinite(numericValue)) {
+        message = rule.invalid;
+      } else if (rawValue !== '' && numericValue < rule.min) {
+        message = rule.invalid;
+      } else if (rawValue !== '' && numericValue > rule.max) {
+        message = rule.tooHigh;
+      }
+
+      field.setCustomValidity(message);
+      error.textContent = message;
+      const hasError = message !== '';
+      error.classList.toggle('hidden', !hasError);
+      applyFieldState(hasError);
+    };
+
+    field.addEventListener('input', syncValidationState);
+    field.addEventListener('blur', syncValidationState);
+    field.addEventListener('invalid', function () {
+      const rawValue = field.value.trim();
+      const numericValue = Number(rawValue);
+      let message = rule.invalid;
+
+      if (rawValue === '') {
+        message = rule.required;
+      } else if (Number.isFinite(numericValue) && numericValue > rule.max) {
+        message = rule.tooHigh;
+      }
+
+      field.setCustomValidity(message);
+      error.textContent = message;
+      error.classList.remove('hidden');
+      applyFieldState(true);
+    });
+
+    syncValidationState();
+  });
+});
+</script>
 @endsection

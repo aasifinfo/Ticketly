@@ -18,6 +18,7 @@ class OrderController extends Controller
         $eventIds  = Event::where('organiser_id', $organiser->id)->pluck('id');
 
         $query = Booking::with(['event'])
+            ->withSum('items as total_tickets', 'quantity')
             ->whereIn('event_id', $eventIds);
 
         // ── Filters ────────────────────────────────────────────────
@@ -150,7 +151,7 @@ class OrderController extends Controller
                     $b->portal_fee,
                     $b->service_fee,
                     $b->total,
-                    $b->created_at->format('Y-m-d H:i:s'),
+                    ticketly_format_date($b->created_at),
                     $b->refund_amount ?? '',
                 ]);
             }

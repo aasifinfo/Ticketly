@@ -39,14 +39,16 @@ class ServiceFeeCalculator
      */
     public static function total(float $subtotal, float $discount = 0.0): array
     {
+        $subtotal = round($subtotal, 2);
         $portalFee = self::portalFee($subtotal);
         $serviceFee = self::fee($subtotal);
         $grossTotal = round($subtotal + $portalFee + $serviceFee, 2);
-        $appliedDiscount = min(max(0.0, round($discount, 2)), $grossTotal);
-        $total = max(0.0, round($grossTotal - $appliedDiscount, 2));
+        $appliedDiscount = min(max(0.0, round($discount, 2)), $subtotal);
+        $discountedSubtotal = max(0.0, round($subtotal - $appliedDiscount, 2));
+        $total = round($discountedSubtotal + $portalFee + $serviceFee, 2);
 
         return [
-            'subtotal' => round($subtotal, 2),
+            'subtotal' => $subtotal,
             'discount' => $appliedDiscount,
             'gross_total' => $grossTotal,
             'portal_fee' => $portalFee,

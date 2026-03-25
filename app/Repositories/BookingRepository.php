@@ -41,14 +41,33 @@ class BookingRepository
             }
 
             $reservation->loadMissing('items');
+            $customerName = trim((string) ($reservation->customer_name ?? ''));
+            $customerEmail = trim((string) ($reservation->customer_email ?? ''));
+            $customerPhone = trim((string) ($reservation->customer_phone ?? ''));
+
+            if ($customerName === '') {
+                $customerName = 'Guest Customer';
+            }
+            if ($customerEmail === '') {
+                $customerEmail = $this->guestEmailForReservation($reservation);
+            }
+            if ($customerPhone === '') {
+                $customerPhone = null;
+            }
+
+            $reservation->update([
+                'customer_name'  => $customerName,
+                'customer_email' => $customerEmail,
+                'customer_phone' => $customerPhone,
+            ]);
 
             $customer = null;
-            if (!empty($reservation->customer_email)) {
+            if (!$this->isGuestEmail($customerEmail)) {
                 $customer = Customer::updateOrCreate(
-                    ['email' => $reservation->customer_email],
+                    ['email' => $customerEmail],
                     [
-                        'name'  => $reservation->customer_name,
-                        'phone' => $reservation->customer_phone,
+                        'name'  => $customerName,
+                        'phone' => $customerPhone,
                     ]
                 );
             }
@@ -57,9 +76,9 @@ class BookingRepository
                 'event_id'                 => $reservation->event_id,
                 'reservation_id'           => $reservation->id,
                 'customer_id'              => $customer?->id,
-                'customer_name'            => $reservation->customer_name,
-                'customer_email'           => $reservation->customer_email,
-                'customer_phone'           => $reservation->customer_phone,
+                'customer_name'            => $customerName,
+                'customer_email'           => $customerEmail,
+                'customer_phone'           => $customerPhone,
                 'promo_code_id'            => $reservation->promo_code_id,
                 'discount_amount'          => $reservation->discount_amount,
                 'subtotal'                 => $reservation->subtotal,
@@ -113,5 +132,17 @@ class BookingRepository
         return Booking::with(['event', 'items.ticketTier', 'promoCode'])
             ->where('reference', strtoupper($reference))
             ->first();
+    }
+
+    private function guestEmailForReservation(Reservation $reservation): string
+    {
+        $token = strtolower((string) $reservation->token);
+        $token = preg_replace('/[^a-z0-9]/', '', $token) ?: (string) $reservation->id;
+        return 'guest+' . $token . '@ticketly.invalid';
+    }
+
+    private function isGuestEmail(string $email): bool
+    {
+        return str_ends_with(strtolower($email), '@ticketly.invalid');
     }
 }

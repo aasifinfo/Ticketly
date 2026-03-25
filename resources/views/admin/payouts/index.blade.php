@@ -60,7 +60,7 @@
             <td class="py-3 text-white font-semibold">{{ $payout->organiser?->company_name }}</td>
             <td class="py-3 text-gray-300">{{ ticketly_money($payout->amount) }}</td>
             <td class="py-3 text-gray-400">{{ ucfirst($payout->status) }}</td>
-            <td class="py-3 text-gray-500 text-right">{{ $payout->created_at->format('d M Y') }}</td>
+            <td class="py-3 text-gray-500 text-right">{{ ticketly_format_date($payout->created_at) }}</td>
           </tr>
           @empty
           <tr>

@@ -246,7 +246,6 @@
     font-size: 0.78rem;
     font-weight: 700;
     line-height: 1;
-    text-transform: lowercase;
     color: #ffffff;
   }
 
@@ -522,12 +521,12 @@
 @section('content')
 @php
     $statusMap = [
-        'paid' => ['label' => 'completed', 'class' => 'dashboard-status dashboard-status--success'],
-        'pending' => ['label' => 'pending', 'class' => 'dashboard-status dashboard-status--warning'],
-        'refunded' => ['label' => 'refunded', 'class' => 'dashboard-status dashboard-status--danger'],
-        'partially_refunded' => ['label' => 'refunded', 'class' => 'dashboard-status dashboard-status--danger'],
-        'cancelled' => ['label' => 'cancelled', 'class' => 'dashboard-status dashboard-status--muted'],
-        'failed' => ['label' => 'failed', 'class' => 'dashboard-status dashboard-status--muted'],
+        'paid' => 'dashboard-status dashboard-status--success',
+        'pending' => 'dashboard-status dashboard-status--warning',
+        'refunded' => 'dashboard-status dashboard-status--danger',
+        'partially_refunded' => 'dashboard-status dashboard-status--danger',
+        'cancelled' => 'dashboard-status dashboard-status--muted',
+        'failed' => 'dashboard-status dashboard-status--muted',
     ];
 @endphp
 
@@ -615,13 +614,14 @@
                     <tbody>
                         @foreach($recentBookings as $booking)
                         @php
-                            $status = $statusMap[$booking->status] ?? ['label' => strtolower($booking->status), 'class' => 'dashboard-status dashboard-status--muted'];
+                            $statusClass = $statusMap[$booking->status] ?? 'dashboard-status dashboard-status--muted';
+                            $statusLabel = $booking->status_badge['label'] ?? ucfirst(str_replace('_', ' ', $booking->status));
                         @endphp
                         <tr>
                             <td>{{ $booking->reference }}</td>
                             <td>{{ $booking->customer_name }}</td>
                             <td>{{ ticketly_money($booking->total) }}</td>
-                            <td><span class="{{ $status['class'] }}">{{ $status['label'] }}</span></td>
+                            <td><span class="{{ $statusClass }}">{{ $statusLabel }}</span></td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -654,7 +654,7 @@
                 <a href="{{ route('organiser.events.show', $event->id) }}" class="dashboard-event-item">
                     <div>
                         <div class="dashboard-event-item__title">{{ $event->title }}</div>
-                        <div class="dashboard-event-item__date">{{ $event->starts_at->format('M d, Y') }}</div>
+                        <div class="dashboard-event-item__date">{{ ticketly_format_date($event->starts_at) }}</div>
                     </div>
                     <div class="dashboard-event-item__stats">
                         <div class="dashboard-event-item__count">{{ number_format($soldTickets) }}</div>

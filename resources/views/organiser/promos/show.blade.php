@@ -49,15 +49,15 @@
       </div>
       <div>
         <div class="text-xs text-gray-500 mb-0.5">Expires</div>
-        <div class="text-sm font-semibold text-white">{{ $promo->expires_at ? $promo->expires_at->format('d M Y') : '-' }}</div>
+        <div class="text-sm font-semibold text-white">{{ $promo->expires_at ? ticketly_format_date($promo->expires_at) : '-' }}</div>
       </div>
       <div>
         <div class="text-xs text-gray-500 mb-0.5">Created</div>
-        <div class="text-sm font-semibold text-white">{{ $promo->created_at?->format('d M Y H:i') }}</div>
+        <div class="text-sm font-semibold text-white">{{ ticketly_format_datetime($promo->created_at) }}</div>
       </div>
       <div>
         <div class="text-xs text-gray-500 mb-0.5">Deleted At</div>
-        <div class="text-sm font-semibold text-white">{{ $promo->deleted_at?->format('d M Y H:i') ?? '-' }}</div>
+        <div class="text-sm font-semibold text-white">{{ ticketly_format_datetime($promo->deleted_at, '-') }}</div>
       </div>
     </div>
   </div>

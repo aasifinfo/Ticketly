@@ -22,7 +22,7 @@
         ['Customer', $booking->customer_name],
         ['Email', $booking->customer_email],
         ['Phone', $booking->customer_phone ?? '—'],
-        ['Date', $booking->created_at->format('d M Y H:i')],
+        ['Date', ticketly_format_datetime($booking->created_at)],
       ] as [$label, $value])
       <div>
         <div class="text-xs text-gray-500 mb-0.5">{{ $label }}</div>
@@ -90,7 +90,7 @@
         @if($booking->refunded_at)
         <div class="flex justify-between text-gray-300">
           <span>Refunded At</span>
-          <span>{{ $booking->refunded_at->format('d M Y H:i') }}</span>
+          <span>{{ ticketly_format_datetime($booking->refunded_at) }}</span>
         </div>
         @endif
         @if($booking->refund_reason)
@@ -132,7 +132,7 @@
   </div>
   @elseif($booking->isRefunded())
   <div class="bg-emerald-900/30 border border-emerald-700/50 rounded-2xl p-5">
-    <p class="text-emerald-300 text-sm">✅ Refund of {{ ticketly_money($booking->refund_amount) }} processed on {{ $booking->refunded_at?->format('d M Y H:i') }}</p>
+    <p class="text-emerald-300 text-sm">✅ Refund of {{ ticketly_money($booking->refund_amount) }} processed on {{ ticketly_format_datetime($booking->refunded_at) }}</p>
     @if($booking->refund_reason)<p class="text-emerald-200/60 text-xs mt-1">Reason: {{ $booking->refund_reason }}</p>@endif
   </div>
   @endif --}}

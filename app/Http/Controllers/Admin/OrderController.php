@@ -19,7 +19,8 @@ class OrderController extends Controller
 
     public function index(Request $request)
     {
-        $query = Booking::with(['event.organiser', 'customer']);
+        $query = Booking::with(['event.organiser', 'customer'])
+            ->withSum('items as total_tickets', 'quantity');
 
         if ($request->filled('event_id')) {
             $query->where('event_id', $request->event_id);
@@ -130,7 +131,7 @@ class OrderController extends Controller
 
         $discount = 0.0;
         if ($booking->promoCode) {
-            $discount = $booking->promoCode->calculateDiscount($basePricing['gross_total']);
+            $discount = $booking->promoCode->calculateDiscount($newSubtotal);
         }
 
         $pricing = ServiceFeeCalculator::total($newSubtotal, $discount);

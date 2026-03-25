@@ -173,7 +173,7 @@
       </a>
 
       <a href="{{ route('organiser.events.index') }}"
-         class="sidebar-link {{ request()->routeIs('organiser.events.*') ? 'active' : '' }}">
+         class="sidebar-link {{ request()->routeIs('organiser.events.*') || request()->routeIs('organiser.sponsorships.*') ? 'active' : '' }}">
         <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
         Events
       </a>
@@ -247,7 +247,7 @@
     </div>
 
     {{-- Logout Button --}}
-    <form action="{{ route('organiser.logout') }}" method="POST">
+    <form action="{{ route('organiser.logout') }}" method="POST" data-logout-guard data-logout-redirect="{{ route('organiser.login') }}">
         @csrf
         <button type="submit"
             class="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-gray-800 transition">
@@ -280,7 +280,7 @@
         @endif
         <div>
           <h1 class="text-base font-bold text-white">@yield('page-title', 'Dashboard')</h1>
-          <p class="text-xs text-gray-500">@yield('page-subtitle', date('l, d F Y'))</p>
+          <p class="text-xs text-gray-500">@yield('page-subtitle', ticketly_format_date(now()))</p>
         </div>
       </div>
 
@@ -305,8 +305,10 @@
       </div>
     </header>
 
+    @php($hideDefaultAlerts = trim($__env->yieldContent('hide-default-alerts')) !== '')
+
     <!-- Flash Messages -->
-    @if(session('success'))
+    @if(!$hideDefaultAlerts && session('success'))
     <div class="mx-6 mt-4 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
       <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center text-emerald-600">
         <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
@@ -314,7 +316,7 @@
       <span class="font-medium">{{ session('success') }}</span>
     </div>
     @endif
-    @if(session('info'))
+    @if(!$hideDefaultAlerts && session('info'))
     <div class="mx-6 mt-4 flex items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
       <svg class="h-4 w-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -322,7 +324,7 @@
       <span class="font-medium">{{ session('info') }}</span>
     </div>
     @endif
-    @if($errors->any())
+    @if(!$hideDefaultAlerts && $errors->any())
     <div class="mx-6 mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
       @foreach($errors->all() as $error)
       <div class="flex items-start gap-2">
@@ -361,6 +363,60 @@
 
 @include('partials.theme-system-script')
 <script>
+  (function () {
+    var logoutGuardKey = 'ticketly:logout-guard';
+    var logoutRedirectKey = 'ticketly:logout-redirect';
+    var fallbackRedirect = @json(route('organiser.login'));
+
+    function getRedirectUrl() {
+      try {
+        return sessionStorage.getItem(logoutRedirectKey) || fallbackRedirect;
+      } catch (error) {
+        return fallbackRedirect;
+      }
+    }
+
+    function clearLogoutGuard() {
+      try {
+        sessionStorage.removeItem(logoutGuardKey);
+        sessionStorage.removeItem(logoutRedirectKey);
+      } catch (error) {
+        // Ignore storage access failures.
+      }
+    }
+
+    function redirectIfRestoredAfterLogout() {
+      try {
+        if (sessionStorage.getItem(logoutGuardKey) !== '1') return;
+      } catch (error) {
+        return;
+      }
+
+      window.location.replace(getRedirectUrl());
+    }
+
+    document.addEventListener('submit', function (event) {
+      var form = event.target.closest('form[data-logout-guard]');
+      if (!form) return;
+
+      try {
+        sessionStorage.setItem(logoutGuardKey, '1');
+        sessionStorage.setItem(logoutRedirectKey, form.getAttribute('data-logout-redirect') || fallbackRedirect);
+      } catch (error) {
+        // Ignore storage access failures.
+      }
+    });
+
+    window.addEventListener('pageshow', function (event) {
+      if (event.persisted) {
+        redirectIfRestoredAfterLogout();
+        return;
+      }
+
+      clearLogoutGuard();
+    });
+  })();
+
   function toggleSidebar() {
     var sidebar = document.getElementById('sidebar');
     var backdrop = document.getElementById('sidebar-backdrop');
@@ -425,5 +481,6 @@
   })();
 </script>
 @yield('scripts')
+@include('partials.date-input-display')
 </body>
 </html>

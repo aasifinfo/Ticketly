@@ -43,7 +43,7 @@ $isFeaturedCard = $featured ?? false;
     <div class="absolute bottom-3 left-3">
       <div class="bg-black/70 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-lg">
         <!-- <time datetime="{{ $event->starts_at->toISOString() }}">{{ $event->starts_at->format('d M Y · g:ia') }}</time> -->
-        <time datetime="{{ $event->starts_at->toISOString() }}">{{ $event->starts_at->format('l M j, Y') }}</time>
+        <time datetime="{{ $event->starts_at->toISOString() }}">{{ ticketly_format_date($event->starts_at) }}</time>
       </div>
     </div>
   </a>

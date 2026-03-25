@@ -48,7 +48,7 @@
         ['Phone', $organiser->phone ?? 'Not set', '📱'],
         ['Website', $organiser->website ?? 'Not set', '🌐'],
         ['Account Status', $organiser->is_approved ? 'Approved ✓' : 'Pending', '🔐'],
-        ['Member Since', $organiser->created_at->format('d M Y'), '📅'],
+        ['Member Since', ticketly_format_date($organiser->created_at), '📅'],
         ['Last Active', $organiser->last_active_at?->diffForHumans() ?? 'Never', '🕐'],
       ] as [$label, $value, $icon])
       <div class="bg-gray-800/50 rounded-xl p-4">
@@ -109,11 +109,12 @@
         </div>
         <div>
           <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">New Password</label>
-          <input type="password" name="password" required minlength="8" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <input type="password" name="password" required minlength="8" maxlength="15" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          @error('password')<p class="text-red-400 text-xs mt-1">{{ $message }}</p>@enderror
         </div>
         <div>
           <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Confirm New</label>
-          <input type="password" name="password_confirmation" required class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <input type="password" name="password_confirmation" required maxlength="15" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
         </div>
       </div>
       <button type="submit" class="px-5 py-2.5 text-sm font-bold text-white rounded-xl bg-indigo-600 hover:bg-indigo-700 transition-colors">Update Password</button>
@@ -150,12 +151,12 @@ document.addEventListener("DOMContentLoaded", function () {
     function setTheme(theme){
         if(theme === "dark"){
             document.documentElement.classList.add("dark");
-            icon.textContent = "🌙";
-            label.textContent = "Dark";
-        }else{
-            document.documentElement.classList.remove("dark");
             icon.textContent = "☀️";
             label.textContent = "Light";
+        }else{
+            document.documentElement.classList.remove("dark");
+            icon.textContent = "🌙";
+            label.textContent = "Dark";
         }
         localStorage.setItem("theme", theme);
     }

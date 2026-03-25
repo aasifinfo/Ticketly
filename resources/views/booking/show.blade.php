@@ -4,13 +4,19 @@
 @section('content')
 @php
     $eventImage = $booking->event->banner_url ?: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&h=400&fit=crop';
-    $eventDate = $booking->event->starts_at->format('l, F j, Y');
-    $eventTime = $booking->event->starts_at->format('g:i A') . ($booking->event->ends_at ? ' - ' . $booking->event->ends_at->format('g:i A') : '');
+    $eventDate = ticketly_format_date($booking->event->starts_at);
+    $eventTime = ticketly_format_time($booking->event->starts_at) . ($booking->event->ends_at ? ' - ' . ticketly_format_time($booking->event->ends_at) : '');
     $eventLocation = collect([$booking->event->venue_name, $booking->event->city])->filter()->implode(', ');
+    $portalFeePercentage = ticketly_format_percentage(ticketly_setting('portal_fee_percentage', config('ticketly.portal_fee_percentage', 10)));
+    $serviceFeePercentage = ticketly_format_percentage(ticketly_setting('service_fee_percentage', config('ticketly.service_fee_percentage', 5)));
     $refundPolicyText = trim((string) $booking->event->refund_policy) !== ''
         ? $booking->event->refund_policy
         : 'Free cancellation up to 24h before event';
-    $qrPayload = 'booking_reference: ' . $booking->reference;
+    $qrPayload = route('events.show', [
+        'slug' => $booking->event->slug,
+        'ticket_uuid' => $booking->ticket_uuid,
+        'booking_reference' => $booking->reference,
+    ]);
 @endphp
 
 <main id="main-content" class="min-h-screen bg-[#ffffff] px-4 py-8 sm:py-10">
@@ -69,11 +75,11 @@
                             <span>{{ ticketly_money($booking->subtotal) }}</span>
                         </div>
                         <div class="mt-2 flex items-center justify-between text-slate-600">
-                            <span>Portal Fee</span>
+                            <span>Portal Fee ({{ $portalFeePercentage }}%)</span>
                             <span>{{ ticketly_money($booking->portal_fee ?? 0) }}</span>
                         </div>
                         <div class="mt-2 flex items-center justify-between text-slate-600">
-                            <span>Service Fee</span>
+                            <span>Service Fee ({{ $serviceFeePercentage }}%)</span>
                             <span>{{ ticketly_money($booking->service_fee ?? 0) }}</span>
                         </div>
                         @if($booking->discount_amount > 0)

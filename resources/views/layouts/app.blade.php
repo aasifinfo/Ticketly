@@ -108,27 +108,16 @@
             <li><a href="#" class="transition" style="color:var(--footer-muted);" onmouseover="this.style.color='var(--footer-heading)'" onmouseout="this.style.color='var(--footer-muted)'">Privacy Policy</a></li>
           </ul>
         </div>
-        <div>
-          <h3 class="text-[1rem] font-bold" style="color:var(--footer-heading);">For Vendors</h3>
-          <ul class="mt-4 space-y-3 text-[1rem]" style="color:var(--footer-muted);">
-            <li><a href="{{ route('organiser.register') }}" class="transition" style="color:var(--footer-muted);" onmouseover="this.style.color='var(--footer-heading)'" onmouseout="this.style.color='var(--footer-muted)'">Become a Vendor</a></li>
-            <li><a href="{{ route('organiser.login') }}" class="transition" style="color:var(--footer-muted);" onmouseover="this.style.color='var(--footer-heading)'" onmouseout="this.style.color='var(--footer-muted)'">Vendor Login</a></li>
-          </ul>
-        </div>
+       
       </div>
 
       <div>
-        <h3 class="text-[1rem] font-bold" style="color:var(--footer-heading);">Newsletter</h3>
-        <p class="mt-4 max-w-[360px] text-[0.98rem] leading-8 sm:text-[1rem]" style="color:var(--footer-muted);">
-          Subscribe to get updates on new events and exclusive offers.
-        </p>
-        <form class="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <input type="email" placeholder="Enter your email" class="h-14 w-full rounded-xl border px-5 text-[1rem] outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100" style="background:var(--footer-input-bg); border-color:var(--footer-input-border); color:var(--footer-text);">
-          <button type="button" class="inline-flex h-14 w-full items-center justify-center rounded-xl bg-[linear-gradient(135deg,#7c3aed,#9333ea)] px-7 text-[1rem] font-semibold text-white shadow-[0_14px_30px_rgba(124,58,237,0.22)] transition hover:opacity-95 sm:w-auto" style="color:#ffffff !important;">
-            Subscribe
-          </button>
-        </form>
-      </div>
+          <h3 class="text-[1rem] font-bold" style="color:var(--footer-heading);">For Organisers</h3>
+          <ul class="mt-4 space-y-3 text-[1rem]" style="color:var(--footer-muted);">
+            <li><a href="{{ route('organiser.register') }}" class="transition" style="color:var(--footer-muted);" onmouseover="this.style.color='var(--footer-heading)'" onmouseout="this.style.color='var(--footer-muted)'">Become an Organiser</a></li>
+            <li><a href="{{ route('organiser.login') }}" class="transition" style="color:var(--footer-muted);" onmouseover="this.style.color='var(--footer-heading)'" onmouseout="this.style.color='var(--footer-muted)'">Organiser Login</a></li>
+          </ul>
+        </div>
     </div>
 
     <div class="mt-16 border-t pt-4 text-center text-[1rem]" style="border-color:var(--footer-border); color:var(--footer-muted);">
@@ -152,7 +141,55 @@
     });
   })();
 </script>
+@if(request()->routeIs('organiser.login', 'admin.login'))
+<script>
+  (function () {
+    var logoutGuardKey = 'ticketly:logout-guard';
+    var logoutRedirectKey = 'ticketly:logout-redirect';
+
+    function isLogoutGuardEnabled() {
+      try {
+        return sessionStorage.getItem(logoutGuardKey) === '1';
+      } catch (error) {
+        return false;
+      }
+    }
+
+    function getRedirectUrl() {
+      try {
+        return sessionStorage.getItem(logoutRedirectKey) || window.location.href;
+      } catch (error) {
+        return window.location.href;
+      }
+    }
+
+    function pinCurrentHistoryEntry() {
+      try {
+        window.history.pushState({ ticketlyLogoutGuard: true }, '', window.location.href);
+      } catch (error) {
+        // Ignore history API failures.
+      }
+    }
+
+    if (!isLogoutGuardEnabled()) return;
+
+    pinCurrentHistoryEntry();
+
+    window.addEventListener('popstate', function () {
+      if (!isLogoutGuardEnabled()) return;
+      pinCurrentHistoryEntry();
+      window.location.replace(getRedirectUrl());
+    });
+
+    window.addEventListener('pageshow', function (event) {
+      if (!event.persisted || !isLogoutGuardEnabled()) return;
+      pinCurrentHistoryEntry();
+    });
+  })();
+</script>
+@endif
 @yield('scripts')
+@include('partials.date-input-display')
 </body>
 </html>
 

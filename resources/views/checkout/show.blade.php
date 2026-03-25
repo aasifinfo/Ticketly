@@ -2,19 +2,30 @@
 @section('title', 'Checkout - ' . $reservation->event->title)
 
 @section('head')
-<script src="https://js.stripe.com/v3/" defer></script>
-
+<script id="stripe-js" src="https://js.stripe.com/v3/"></script>
+<style>
+    #card-element {
+        min-height: 52px;
+        width: 100%;
+        display: flex;
+        align-items: center;
+    }
+    #card-element .StripeElement,
+    #card-element .__PrivateStripeElement {
+        width: 100%;
+    }
+</style>
 @endsection
 
 @section('content')
 @php
     $eventPageUrl = route('events.show', $reservation->event->slug);
-    $ticketSelectionUrl = $eventPageUrl . '#ticket-form';
+    $ticketSelectionUrl = $eventPageUrl . '?reservation=' . $reservation->token . '#ticket-form';
     $heroImage = $reservation->event->banner_url ?: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&h=400&fit=crop';
     $startsAt = $reservation->event->starts_at;
     $endsAt = $reservation->event->ends_at;
-    $desktopDateLine = $startsAt->format('Y-m-d') . ' at ' . $startsAt->format('g:i A');
-    $mobileDateLine = $startsAt->format('l, F j') . ' | ' . $startsAt->format('g:i A') . ($endsAt ? ' - ' . $endsAt->format('g:i A') : '');
+    $desktopDateLine = ticketly_format_datetime($startsAt);
+    $mobileDateLine = ticketly_format_datetime($startsAt) . ($endsAt ? ' - ' . ticketly_format_time($endsAt) : '');
     $desktopLocation = collect([$reservation->event->venue_name, $reservation->event->city])->filter()->implode(', ');
     $mobileLocation = collect([$reservation->event->venue_name, $reservation->event->city])->filter()->implode(' | ');
     $initialPricing = \App\Services\ServiceFeeCalculator::total(
@@ -86,7 +97,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 6 9 12l6 6"></path>
                             </svg>
                         </span>
-                        <span>Back to Event</span>
+                        <span>Modify Tickets</span>
                     </a>
                 </div>
 
@@ -106,56 +117,27 @@
                     <div class="mt-8 space-y-7 max-[375px]:mt-5 max-[375px]:space-y-5">
                         <div>
                             <label for="customer-name" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">Full Name</label>
-                            <input id="customer-name" type="text" autocomplete="name" required aria-describedby="customer-name-error"
+                            <input id="customer-name" type="text" autocomplete="name" aria-describedby="customer-name-error"
+                                   maxlength="100" required
                                    class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"
-                                   placeholder="Enter your full name">
+                                   placeholder="Enter your full name" value="{{ old('name', $reservation->customer_name) }}">
                             <p id="customer-name-error" class="hidden mt-2 text-sm text-rose-600"></p>
                         </div>
                         <div>
                             <label for="customer-email" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">Email Address</label>
-                            <input id="customer-email" type="email" autocomplete="email" required aria-describedby="customer-email-error"
+                            <input id="customer-email" type="email" autocomplete="email" aria-describedby="customer-email-error"
+                                   maxlength="100" required
                                    class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"
-                                   placeholder="Enter your email address">
+                                   placeholder="Enter your email address" value="{{ old('email', $reservation->customer_email) }}">
                             <p id="customer-email-error" class="hidden mt-2 text-sm text-rose-600"></p>
                         </div>
                         <div>
                             <label for="customer-phone" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">Phone Number</label>
-                            <input id="customer-phone" type="tel" autocomplete="tel" required aria-describedby="customer-phone-error"
-                                   class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"
-                                   placeholder="Enter your phone number">
+                            <input id="customer-phone" type="tel" autocomplete="tel" aria-describedby="customer-phone-error"
+                                   maxlength="11" minlength="11" inputmode="numeric" pattern="07[0-9]{9}" title="Enter exactly 11 digits starting with 07" required
+                                    class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"
+                                   placeholder="07123456789" value="{{ old('phone', $reservation->customer_phone) }}">
                             <p id="customer-phone-error" class="hidden mt-2 text-sm text-rose-600"></p>
-                        </div>
-                        <div class="grid gap-5 sm:grid-cols-2">
-                            <div>
-                                <label for="customer-city" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">City</label>
-                                <input id="customer-city" type="text" autocomplete="address-level2" required aria-describedby="customer-city-error"
-                                       class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"
-                                       placeholder="City">
-                                <p id="customer-city-error" class="hidden mt-2 text-sm text-rose-600"></p>
-                            </div>
-                            <div>
-                                <label for="customer-state" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">State</label>
-                                <input id="customer-state" type="text" autocomplete="address-level1" required aria-describedby="customer-state-error"
-                                       class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"
-                                       placeholder="State">
-                                <p id="customer-state-error" class="hidden mt-2 text-sm text-rose-600"></p>
-                            </div>
-                        </div>
-                        <div class="grid gap-5 sm:grid-cols-2">
-                            <div>
-                                <label for="customer-postal" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">Postal Code</label>
-                                <input id="customer-postal" type="text" autocomplete="postal-code" required aria-describedby="customer-postal-error"
-                                       class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"
-                                       placeholder="Pin Code">
-                                <p id="customer-postal-error" class="hidden mt-2 text-sm text-rose-600"></p>
-                            </div>
-                            <div>
-                                <label for="customer-country" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">Country Code (2 letters)</label>
-                                <input id="customer-country" type="text" autocomplete="country" required aria-describedby="customer-country-error"
-                                       class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 uppercase tracking-[0.2em] placeholder:normal-case placeholder:tracking-normal outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"
-                                       placeholder="Country Code">
-                                <p id="customer-country-error" class="hidden mt-2 text-sm text-rose-600"></p>
-                            </div>
                         </div>
                     </div>
                 </section>
@@ -171,7 +153,7 @@
                             <span class="text-[1rem] font-medium max-[375px]:text-[0.92rem] sm:text-[1.05rem]">Credit / Debit Card</span>
                         </div>
 
-                        <div id="payment-element" class="rounded-2xl border border-slate-200 bg-white p-4 max-[375px]:p-3" aria-label="Card payment form"></div>
+                        <div id="card-element" class="rounded-2xl border border-slate-200 bg-white p-4 max-[375px]:p-3" aria-label="Card payment form"></div>
                         <div id="payment-placeholder" class="hidden mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600" role="status"></div>
                         <div id="payment-message" class="hidden mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert" aria-live="assertive"></div>
                     </div>
@@ -238,11 +220,11 @@
                                 <span data-summary="subtotal" class="font-medium text-slate-900">{{ ticketly_money($reservation->subtotal) }}</span>
                             </div>
                             <div class="mt-4 flex items-center justify-between">
-                                <span>Portal Fee ({{ $portalFeePct }}%)</span>
+                                <span>Portal Fee ({{ ticketly_format_percentage(ticketly_setting('portal_fee_percentage', $portalFeePct)) }}%)</span>
                                 <span data-summary="portal-fee" class="font-medium text-slate-900">{{ ticketly_money($initialPricing['portal_fee']) }}</span>
                             </div>
                             <div class="mt-4 flex items-center justify-between">
-                                <span>Service Fee ({{ $feePct }}%)</span>
+                                <span>Service Fee ({{ ticketly_format_percentage(ticketly_setting('service_fee_percentage', $feePct)) }}%)</span>
                                 <span data-summary="service-fee" class="font-medium text-slate-900">{{ ticketly_money($initialPricing['service_fee']) }}</span>
                             </div>
                             <div data-discount-row class="{{ $initialDiscount > 0 ? '' : 'hidden ' }}mt-4 flex items-center justify-between text-emerald-600">
@@ -283,11 +265,11 @@
                                     <span data-summary="subtotal" class="font-medium text-slate-900">{{ ticketly_money($reservation->subtotal) }}</span>
                                 </div>
                                 <div class="mt-4 flex items-center justify-between">
-                                    <span>Portal Fee ({{ $portalFeePct }}%)</span>
+                                    <span>Portal Fee ({{ ticketly_format_percentage(ticketly_setting('portal_fee_percentage', $portalFeePct)) }}%)</span>
                                     <span data-summary="portal-fee" class="font-medium text-slate-900">{{ ticketly_money($initialPricing['portal_fee']) }}</span>
                                 </div>
                                 <div class="mt-4 flex items-center justify-between">
-                                    <span>Service Fee ({{ $feePct }}%)</span>
+                                    <span>Service Fee ({{ ticketly_format_percentage(ticketly_setting('service_fee_percentage', $feePct)) }}%)</span>
                                     <span data-summary="service-fee" class="font-medium text-slate-900">{{ ticketly_money($initialPricing['service_fee']) }}</span>
                                 </div>
                                 <div data-discount-row class="{{ $initialDiscount > 0 ? '' : 'hidden ' }}mt-4 flex items-center justify-between text-emerald-600">
@@ -377,64 +359,132 @@
 
 @section('scripts')
 <script>
-(function () {
+document.addEventListener('DOMContentLoaded', function () {
     const intentUrl  = '{{ route('checkout.intent', $reservation->token) }}';
     const statusUrl  = '{{ route('checkout.poll', $reservation->token) }}';
+    const checkoutSuccessUrl = '{{ route('checkout.success', $reservation->token) }}';
     const eventPageUrl = '{{ route('events.show', $reservation->event->slug) }}';
     const eventUrl   = @js($ticketSelectionUrl);
     const releaseUrl = '{{ route('reservation.release', $reservation->token) }}';
     const csrfToken  = document.querySelector('meta[name=csrf-token]').content;
-    let stripe, elements, paymentElement;
+    let stripe, elements, cardElement;
+    let cardMounted = false;
     let intentReady = false;
     let paymentInProgress = false;
     let lockPayButton = false;
     let currentIntentId = null;
     let currentClientSecret = null;
+    let resolvedBillingProfile = null;
     let isExpired = false;
     let promoCode = '';
     let discountAmount = {{ $initialDiscount }};
     let currentTotal = {{ (float) $initialTotal }};
     const subtotal = {{ (float) $reservation->subtotal }};
-    const feePct = {{ (int) config('ticketly.service_fee_percentage', 5) }};
-    const portalFeePct = {{ (int) config('ticketly.portal_fee_percentage', 10) }};
+    const feePct = {{ (float) ticketly_setting('service_fee_percentage', config('ticketly.service_fee_percentage', 5)) }};
+    const portalFeePct = {{ (float) ticketly_setting('portal_fee_percentage', config('ticketly.portal_fee_percentage', 10)) }};
     const currencySymbol = @js(ticketly_currency_symbol());
+    const stripePublishableKey = @js((string) config('services.stripe.key'));
     const currentTheme = () => document.documentElement.getAttribute('data-theme-lock') === 'light'
         || document.documentElement.getAttribute('data-theme') === 'light'
         ? 'light'
         : 'dark';
 
-    function stripeAppearance(theme) {
+    function cardElementStyle(theme) {
         if (theme === 'light') {
             return {
-                theme: 'stripe',
-                variables: {
-                    colorPrimary: '#7c3aed',
-                    colorBackground: '#ffffff',
-                    colorText: '#0f172a',
-                    colorDanger: '#be123c',
-                    borderRadius: '16px',
+                base: {
+                    color: '#0f172a',
+                    fontSize: '16px',
                     fontFamily: 'Inter, sans-serif',
+                    fontSmoothing: 'antialiased',
+                    '::placeholder': {
+                        color: '#94a3b8',
+                    },
                 },
-                rules: {
-                    '.Input': { borderColor: '#e2e8f0', boxShadow: 'none' },
-                    '.Input:focus': { borderColor: '#c4b5fd', boxShadow: '0 0 0 4px rgba(139,92,246,0.12)' },
-                    '.Tab': { borderColor: '#e2e8f0' },
-                    '.Tab:hover': { color: '#111827' },
-                    '.Tab--selected': { borderColor: '#7c3aed' },
+                invalid: {
+                    color: '#be123c',
+                    iconColor: '#be123c',
                 },
             };
         }
 
         return {
-            theme: 'night',
-            variables: {
-                colorPrimary: '#7c3aed',
-                colorBackground: '#1f2937',
-                colorText: '#f9fafb',
-                borderRadius: '16px',
+            base: {
+                color: '#f8fafc',
+                fontSize: '16px',
                 fontFamily: 'Inter, sans-serif',
+                fontSmoothing: 'antialiased',
+                '::placeholder': {
+                    color: '#94a3b8',
+                },
+            },
+            invalid: {
+                color: '#fecaca',
+                iconColor: '#fecaca',
             },
         };
+    }
+
+    function ensureStripeCardMounted() {
+        const mountPoint = document.getElementById('card-element');
+
+        if (!stripePublishableKey) {
+            intentReady = false;
+            setPaymentPlaceholder('Card form is temporarily unavailable. Please refresh and try again.');
+            showError('Stripe publishable key is missing.');
+            return false;
+        }
+
+        if (typeof window.Stripe !== 'function') {
+            intentReady = false;
+            setPaymentPlaceholder('Stripe.js did not load. Please refresh and try again.');
+            showError('Unable to load Stripe card form right now.');
+            return false;
+        }
+
+        if (!mountPoint) {
+            intentReady = false;
+            showError('Card input container is missing on the page.');
+            return false;
+        }
+
+        if (!stripe) {
+            stripe = window.Stripe(stripePublishableKey);
+        }
+
+        if (!stripe) {
+            intentReady = false;
+            setPaymentPlaceholder('Unable to start Stripe card form. Please refresh and try again.');
+            showError('Stripe could not be initialized.');
+            return false;
+        }
+
+        if (!elements) {
+            elements = stripe.elements();
+        }
+
+        if (!cardElement) {
+            cardElement = elements.create('card', {
+                hidePostalCode: true,
+                style: cardElementStyle(currentTheme()),
+            });
+
+            cardElement.on('change', (event) => {
+                if (event.error?.message) {
+                    showError(event.error.message);
+                } else {
+                    hideError();
+                }
+            });
+        }
+
+        if (!cardMounted) {
+            cardElement.mount('#card-element');
+            cardMounted = true;
+        }
+
+        setPaymentPlaceholder('');
+        return true;
     }
 
     function updateCountdownDisplays(seconds) {
@@ -461,48 +511,6 @@
         updateCountdownDisplays(secs);
     }, 1000);
 
-    async function initStripe(data) {
-        stripe = Stripe('{{ config('services.stripe.key') }}');
-        elements = stripe.elements({
-            clientSecret: data.client_secret,
-            appearance: stripeAppearance(currentTheme()),
-        });
-        if (paymentElement) {
-            paymentElement.unmount();
-        }
-        paymentElement = elements.create('payment', { layout: 'tabs' });
-        paymentElement.mount('#payment-element');
-        currentIntentId = data.intent_id || currentIntentId;
-        currentClientSecret = data.client_secret || currentClientSecret;
-        paymentElement.on('change', (event) => {
-            if (event.error?.message) {
-                showError(event.error.message);
-            } else {
-                hideError();
-            }
-        });
-        intentReady = true;
-        updateTotals();
-    }
-
-    function setFieldError(fieldId, message) {
-        const input = document.getElementById(fieldId);
-        const errorEl = document.getElementById(fieldId + '-error');
-        if (!input || !errorEl) return;
-
-        if (message) {
-            errorEl.textContent = message;
-            errorEl.classList.remove('hidden');
-            input.classList.add('border-rose-400');
-            input.setAttribute('aria-invalid', 'true');
-        } else {
-            errorEl.textContent = '';
-            errorEl.classList.add('hidden');
-            input.classList.remove('border-rose-400');
-            input.removeAttribute('aria-invalid');
-        }
-    }
-
     function setTermsError(message) {
         const termsCheckbox = document.getElementById('terms-checkbox');
         const errorEl = document.getElementById('terms-checkbox-error');
@@ -519,147 +527,139 @@
         }
     }
 
-    function validateCustomerDetails(showInlineErrors = true) {
-        const name  = document.getElementById('customer-name').value.trim();
-        const email = document.getElementById('customer-email').value.trim();
-        const phone = document.getElementById('customer-phone').value.trim();
-        const city = document.getElementById('customer-city').value.trim();
-        const state = document.getElementById('customer-state').value.trim();
-        const postal = document.getElementById('customer-postal').value.trim();
-        const country = document.getElementById('customer-country').value.trim();
-        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const phonePattern = /^[0-9+\-\s()]{7,20}$/;
-        const countryPattern = /^[A-Za-z]{2}$/;
+    function setFieldError(fieldId, message, options = {}) {
+        const { markInvalid = true, feedbackType = message ? 'error' : '' } = options;
+        const input = document.getElementById(fieldId);
+        const errorEl = document.getElementById(fieldId + '-error');
+        if (!input || !errorEl) return;
 
-        let valid = true;
-        const requireAddress = currentTotal > 0;
-        let nameError = '';
-        let emailError = '';
-        let phoneError = '';
-        let cityError = '';
-        let stateError = '';
-        let postalError = '';
-        let countryError = '';
+        if (message) {
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+            input.classList.add('border-rose-400');
+            errorEl.dataset.feedbackType = feedbackType;
 
-        if (!name) {
-            nameError = 'Full name is required.';
-            valid = false;
-        }
-
-        if (!email) {
-            emailError = 'Email address is required.';
-            valid = false;
-        } else if (!emailPattern.test(email)) {
-            emailError = 'Please enter a valid email address.';
-            valid = false;
-        }
-
-        if (!phone) {
-            phoneError = 'Phone number is required.';
-            valid = false;
-        } else if (!phonePattern.test(phone)) {
-            phoneError = 'Please enter a valid phone number.';
-            valid = false;
-        }
-
-        if (requireAddress) {
-            if (!city) {
-                cityError = 'City is required.';
-                valid = false;
+            if (markInvalid) {
+                input.setAttribute('aria-invalid', 'true');
+            } else {
+                input.removeAttribute('aria-invalid');
             }
-
-            if (!state) {
-                stateError = 'State or province is required.';
-                valid = false;
-            }
-
-            if (!postal) {
-                postalError = 'Postal code is required.';
-                valid = false;
-            }
-
-            if (!country) {
-                countryError = 'Country code is required.';
-                valid = false;
-            } else if (!countryPattern.test(country)) {
-                countryError = 'Use a 2-letter country code (e.g., IN, US, UK).';
-                valid = false;
-            }
+        } else {
+            errorEl.textContent = '';
+            errorEl.classList.add('hidden');
+            input.classList.remove('border-rose-400');
+            input.removeAttribute('aria-invalid');
+            delete errorEl.dataset.feedbackType;
         }
-
-        if (showInlineErrors) {
-            setFieldError('customer-name', nameError);
-            setFieldError('customer-email', emailError);
-            setFieldError('customer-phone', phoneError);
-            setFieldError('customer-city', cityError);
-            setFieldError('customer-state', stateError);
-            setFieldError('customer-postal', postalError);
-            setFieldError('customer-country', countryError);
-        }
-
-        return valid;
     }
 
-    function validateField(fieldId) {
+    function getFieldValidationError(fieldId, requireValue = true) {
         const value = document.getElementById(fieldId)?.value.trim() || '';
-        const requireAddress = currentTotal > 0;
         let error = '';
 
-        if (fieldId === 'customer-name' && !value) {
-            error = 'Full name is required.';
+        if (fieldId === 'customer-name') {
+            if (requireValue && !value) error = 'Full name is required.';
+            else if (value.length > 100) error = 'Full name may not be greater than 100 characters.';
         }
 
         if (fieldId === 'customer-email') {
             const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!value) error = 'Email address is required.';
-            else if (!emailPattern.test(value)) error = 'Please enter a valid email address.';
+            if (requireValue && !value) error = 'Email address is required.';
+            else if (value.length > 100) error = 'Email address may not be greater than 100 characters.';
+            else if (value && !emailPattern.test(value)) error = 'Please enter a valid email address.';
         }
 
         if (fieldId === 'customer-phone') {
-            const phonePattern = /^[0-9+\-\s()]{7,20}$/;
-            if (!value) error = 'Phone number is required.';
-            else if (!phonePattern.test(value)) error = 'Please enter a valid phone number.';
+            const phonePattern = /^\d{11}$/;
+            if (requireValue && !value) error = 'Phone number is required.';
+            else if (value && !value.startsWith('07')) error = 'Phone number must start with 07';
+            else if (value && !phonePattern.test(value)) error = 'Phone Number Must Be Exactly 11 digits';
         }
 
-        if (requireAddress) {
-            if (fieldId === 'customer-city' && !value) {
-                error = 'City is required.';
-            }
+        return error;
+    }
 
-            if (fieldId === 'customer-state' && !value) {
-                error = 'State or province is required.';
-            }
-
-            if (fieldId === 'customer-postal' && !value) {
-                error = 'Postal code is required.';
-            }
-
-            if (fieldId === 'customer-country') {
-                const countryPattern = /^[A-Za-z]{2}$/;
-                if (!value) error = 'Country code is required.';
-                else if (!countryPattern.test(value)) error = 'Use a 2-letter country code (e.g., IN, US, UK).';
-            }
-        }
-
+    function validateField(fieldId, requireValue = true) {
+        const error = getFieldValidationError(fieldId, requireValue);
         setFieldError(fieldId, error);
         return !error;
     }
 
+    function applyFieldLimitNotice(fieldId) {
+        const input = document.getElementById(fieldId);
+        const errorEl = document.getElementById(fieldId + '-error');
+        const maxLength = Number(input?.getAttribute('maxlength') || 0);
+        const fieldLimitMessages = {
+            'customer-name': 'Full name maximum limit reached.',
+            'customer-email': 'Email address maximum limit reached.',
+        };
+        const limitMessage = fieldLimitMessages[fieldId];
+
+        if (!input || !errorEl || !limitMessage || maxLength <= 0) {
+            return;
+        }
+
+        if (getFieldValidationError(fieldId, false)) {
+            return;
+        }
+
+        if (input.value.length >= maxLength) {
+            setFieldError(fieldId, limitMessage, {
+                markInvalid: false,
+                feedbackType: 'notice',
+            });
+            return;
+        }
+
+        if (errorEl.dataset.feedbackType === 'notice') {
+            setFieldError(fieldId, '');
+        }
+    }
+
+    function validateCustomerDetails(showInlineErrors = true, requireComplete = true) {
+        const fields = ['customer-name', 'customer-email', 'customer-phone'];
+        let valid = true;
+
+        fields.forEach((fieldId) => {
+            const fieldValid = validateField(fieldId, requireComplete);
+            if (!fieldValid) valid = false;
+            if (!showInlineErrors) {
+                setFieldError(fieldId, '');
+            }
+        });
+
+        return valid;
+    }
+
+    function hasValidCustomerDetails() {
+        return ['customer-name', 'customer-email', 'customer-phone'].every((fieldId) => {
+            return !getFieldValidationError(fieldId, true);
+        });
+    }
+
     function getCustomerDetails() {
         return {
-            name: document.getElementById('customer-name').value.trim(),
-            email: document.getElementById('customer-email').value.trim(),
-            phone: document.getElementById('customer-phone').value.trim(),
-            city: document.getElementById('customer-city').value.trim(),
-            state: document.getElementById('customer-state').value.trim(),
-            postal_code: document.getElementById('customer-postal').value.trim(),
-            country: document.getElementById('customer-country').value.trim().toUpperCase(),
+            name: document.getElementById('customer-name')?.value.trim() || '',
+            email: document.getElementById('customer-email')?.value.trim() || '',
+            phone: document.getElementById('customer-phone')?.value.trim() || '',
         };
     }
 
+    function applyServerValidationErrors(errors = {}) {
+        const fieldMap = {
+            name: 'customer-name',
+            email: 'customer-email',
+            phone: 'customer-phone',
+        };
+
+        Object.entries(fieldMap).forEach(([key, fieldId]) => {
+            setFieldError(fieldId, errors?.[key]?.[0] || '');
+        });
+    }
+
     async function fetchIntent(options = {}) {
-        const { requireCustomer = true, showLoading = true } = options;
-        const { name, email, phone, city, state, postal_code, country } = getCustomerDetails();
+        const { showLoading = true, showInlineErrors = true } = options;
+        const customer = getCustomerDetails();
 
         if (isExpired) {
             handleExpiry('Your hold has already expired.');
@@ -670,9 +670,9 @@
             return;
         }
 
-        if (requireCustomer && !validateCustomerDetails(true)) {
+        if (!validateCustomerDetails(showInlineErrors, true)) {
             refreshPayButtonState();
-            return;
+            return null;
         }
 
         if (showLoading) {
@@ -681,57 +681,63 @@
         }
 
         try {
-            const payload = { promo_code: promoCode };
-            if (validateCustomerDetails(false)) {
-                payload.name = name;
-                payload.email = email;
-                payload.phone = phone;
-                payload.city = city;
-                payload.state = state;
-                payload.postal_code = postal_code;
-                payload.country = country;
-            }
+            const payload = {
+                promo_code: promoCode,
+                name: customer.name,
+                email: customer.email,
+                phone: customer.phone,
+            };
 
             const res = await fetch(intentUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
                 body: JSON.stringify(payload),
             });
-            const data = await res.json();
+            let data = {};
+            try {
+                data = await res.json();
+            } catch (e) {
+                setPaymentPlaceholder('Card form could not load right now. Please refresh and try again.');
+                showError('Unable to load card form right now. Please refresh and try again.');
+                return null;
+            }
 
             if (data.error) {
                 if (data.expired) {
                     handleExpiry(data.error || 'Your ticket hold has expired.', data.redirect_to);
                     return;
                 }
+                setPaymentPlaceholder('Card form is temporarily unavailable. Please try again.');
                 showError(data.error);
                 return;
             }
             if (!res.ok) {
-                showError(data.message || 'Unable to prepare payment details right now.');
-                return;
-            }
-            if (data.needs_customer) {
-                if (requireCustomer) {
-                    showError(data.message || 'Please enter your contact details to continue.');
-                }
-                setPaymentPlaceholder('No payment method required for free tickets. Enter your contact details to confirm.');
+                applyServerValidationErrors(data?.errors || {});
+                const firstValidationError = data?.errors
+                    ? Object.values(data.errors)[0]?.[0]
+                    : null;
+                setPaymentPlaceholder('Card form could not be prepared right now. Please try again.');
+                showError(firstValidationError || data.message || 'Unable to prepare payment details right now.');
                 return;
             }
             if (data.free && data.redirect) {
                 showProcessingOverlay();
-                window.location.href = data.redirect;
+                window.location.replace(data.redirect);
                 return;
             }
 
+            applyServerValidationErrors({});
             discountAmount = data.discount || 0;
             updateSummaryUI(subtotal, discountAmount, data.portal_fee, data.service_fee, data.amount);
-
-            if (!intentReady || (data.client_secret && data.client_secret !== currentClientSecret)) {
-                await initStripe(data);
-            }
-            setPaymentPlaceholder('');
+            resolvedBillingProfile = data.billing_profile || resolvedBillingProfile;
+            currentIntentId = data.intent_id || currentIntentId;
+            currentClientSecret = data.client_secret || currentClientSecret;
+            intentReady = !!currentClientSecret;
             return data;
+        } catch (e) {
+            setPaymentPlaceholder('Unable to load card form right now. Please refresh and try again.');
+            showError(e?.message || 'Unable to load payment right now. Please try again.');
+            return null;
         } finally {
             if (showLoading) {
                 document.getElementById('pay-btn-text').classList.remove('hidden');
@@ -750,32 +756,76 @@
             return;
         }
         const termsAccepted = !!termsCheckbox?.checked;
-        const valid = validateCustomerDetails(false);
-        payBtn.disabled = isExpired || paymentInProgress || !termsAccepted || !valid;
+        const customerDetailsValid = hasValidCustomerDetails();
+        payBtn.disabled = isExpired || paymentInProgress || !termsAccepted || !customerDetailsValid;
     }
 
     let detailsTimer;
-    ['customer-name', 'customer-email', 'customer-phone', 'customer-city', 'customer-state', 'customer-postal', 'customer-country'].forEach((id) => {
+    const phoneInput = document.getElementById('customer-phone');
+
+    if (phoneInput) {
+        const sanitizePhoneValue = (value) => value.replace(/\D/g, '').slice(0, 11);
+
+        phoneInput.addEventListener('beforeinput', function (event) {
+            if (event.data && /\D/.test(event.data)) {
+                event.preventDefault();
+            }
+        });
+
+        phoneInput.addEventListener('keydown', function (event) {
+            if (event.key === ' ') {
+                event.preventDefault();
+            }
+        });
+
+        phoneInput.addEventListener('paste', function (event) {
+            event.preventDefault();
+            const pastedText = event.clipboardData?.getData('text') ?? '';
+            const sanitizedValue = sanitizePhoneValue(pastedText);
+            const start = this.selectionStart ?? this.value.length;
+            const end = this.selectionEnd ?? this.value.length;
+            const nextValue = sanitizePhoneValue(
+                this.value.slice(0, start) + sanitizedValue + this.value.slice(end)
+            );
+
+            this.value = nextValue;
+            validateField('customer-phone', false);
+        });
+
+        phoneInput.addEventListener('input', function () {
+            const sanitizedValue = sanitizePhoneValue(this.value);
+            if (this.value !== sanitizedValue) {
+                this.value = sanitizedValue;
+            }
+
+            validateField('customer-phone', false);
+        });
+    }
+
+    ['customer-name', 'customer-email', 'customer-phone'].forEach((id) => {
         const field = document.getElementById(id);
         if (!field) return;
 
         field.addEventListener('input', () => {
-            validateField(id);
+            validateField(id, false);
+            applyFieldLimitNotice(id);
             refreshPayButtonState();
         });
 
         field.addEventListener('blur', () => {
-            validateField(id);
+            validateField(id, true);
+            applyFieldLimitNotice(id);
             refreshPayButtonState();
-            if (!validateCustomerDetails(false) || isExpired || paymentInProgress) return;
+            if (!hasValidCustomerDetails() || isExpired || paymentInProgress) return;
             clearTimeout(detailsTimer);
-            detailsTimer = setTimeout(() => fetchIntent({ requireCustomer: true, showLoading: false }), 300);
+            detailsTimer = setTimeout(() => fetchIntent({ showLoading: false }), 300);
         });
     });
 
     document.getElementById('terms-checkbox')?.addEventListener('change', (event) => {
         if (event.target.checked) {
             setTermsError('');
+            ensureStripeCardMounted();
         }
         refreshPayButtonState();
     });
@@ -799,9 +849,14 @@
 
         if (data.valid) {
             promoCode = code;
-            resultEl.textContent = 'Applied: ' + data.message;
-            resultEl.className = 'mt-3 text-sm text-emerald-600';
-            await fetchIntent({ requireCustomer: false, showLoading: false });
+            if (hasValidCustomerDetails()) {
+                resultEl.textContent = 'Applied: ' + data.message;
+                resultEl.className = 'mt-3 text-sm text-emerald-600';
+                await fetchIntent({ showLoading: false, showInlineErrors: false });
+            } else {
+                resultEl.textContent = 'Applied: ' + data.message + ' Complete contact information to continue checkout.';
+                resultEl.className = 'mt-3 text-sm text-emerald-600';
+            }
         } else {
             resultEl.textContent = 'Payment discount unavailable: ' + data.message;
             resultEl.className = 'mt-3 text-sm text-rose-600';
@@ -809,7 +864,7 @@
     });
 
     document.getElementById('mobile-continue-btn')?.addEventListener('click', () => {
-        document.getElementById('contact-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('payment-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
 
     document.getElementById('pay-btn')?.addEventListener('click', async () => {
@@ -832,20 +887,27 @@
         }
         setTermsError('');
 
-        if (!validateCustomerDetails(true)) {
+        if (!validateCustomerDetails(true, true)) {
             lockPayButton = false;
             refreshPayButtonState();
             return;
         }
-        const intentData = await fetchIntent({ requireCustomer: true, showLoading: false });
-        if (!intentData || !intentReady) {
+
+        if (!ensureStripeCardMounted()) {
+            lockPayButton = false;
+            refreshPayButtonState();
+            return;
+        }
+
+        const intentData = await fetchIntent({ showLoading: false, showInlineErrors: true });
+        if (!intentData || !intentReady || !cardMounted || !cardElement || !currentClientSecret) {
+            showError('Card form is not ready yet. Please wait a moment and try again.');
             lockPayButton = false;
             refreshPayButtonState();
             return;
         }
 
         paymentInProgress = true;
-        clearTimeout(detailsTimer);
         refreshPayButtonState();
 
         document.getElementById('pay-btn-text').classList.add('hidden');
@@ -855,26 +917,23 @@
 
         try {
             const customerDetails = getCustomerDetails();
-            const { error, paymentIntent } = await stripe.confirmPayment({
-                elements,
-                confirmParams: {
-                    return_url: '{{ route('checkout.success', $reservation->token) }}',
-                    receipt_email: customerDetails.email,
-                    payment_method_data: {
-                        billing_details: {
-                            name: customerDetails.name,
-                            email: customerDetails.email,
-                            phone: customerDetails.phone,
-                            address: {
-                                city: customerDetails.city,
-                                state: customerDetails.state,
-                                postal_code: customerDetails.postal_code,
-                                country: customerDetails.country,
-                            },
-                        },
-                    },
+            const billingDetails = {};
+            const fallbackBillingName = resolvedBillingProfile?.name || 'Guest Customer';
+            const fallbackBillingAddress = resolvedBillingProfile?.address || null;
+            billingDetails.name = customerDetails.name || fallbackBillingName;
+            if (customerDetails.email) billingDetails.email = customerDetails.email;
+            if (customerDetails.phone) billingDetails.phone = customerDetails.phone;
+            if (fallbackBillingAddress) billingDetails.address = fallbackBillingAddress;
+
+            const confirmPayload = {
+                payment_method: {
+                    card: cardElement,
+                    billing_details: billingDetails,
                 },
-                redirect: 'if_required',
+            };
+
+            const { error, paymentIntent } = await stripe.confirmCardPayment(currentClientSecret, confirmPayload, {
+                handleActions: true,
             });
 
             document.getElementById('pay-btn-text').classList.remove('hidden');
@@ -890,12 +949,20 @@
                 return;
             }
 
-            if (paymentIntent && ['succeeded', 'processing'].includes(paymentIntent.status)) {
-                window.location.href = "{{ route('checkout.success', $reservation->token) }}";
+            if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'processing') {
+                window.location.replace(checkoutSuccessUrl);
                 return;
             }
 
-            window.location.href = "{{ route('checkout.success', $reservation->token) }}";
+            if (paymentIntent?.status === 'requires_payment_method' || paymentIntent?.status === 'canceled') {
+                showError('Payment could not be completed. Please check your card details and try again.');
+                hideProcessingOverlay();
+                lockPayButton = false;
+                refreshPayButtonState();
+                return;
+            }
+
+            window.location.replace(checkoutSuccessUrl);
         } catch (e) {
             document.getElementById('pay-btn-text').classList.remove('hidden');
             document.getElementById('pay-spinner').classList.add('hidden');
@@ -903,7 +970,7 @@
             lockPayButton = false;
             refreshPayButtonState();
             hideProcessingOverlay();
-            showError('We could not confirm your payment right now. Please try again.');
+            showError(e?.message || 'We could not confirm your payment right now. Please try again.');
         }
     });
 
@@ -923,13 +990,13 @@
 
     function setPaymentPlaceholder(message) {
         const placeholder = document.getElementById('payment-placeholder');
-        const element = document.getElementById('payment-element');
+        const element = document.getElementById('card-element');
         if (!placeholder || !element) return;
 
         if (message) {
             placeholder.textContent = message;
             placeholder.classList.remove('hidden');
-            element.classList.add('hidden');
+            if (!cardMounted) element.classList.add('hidden');
         } else {
             placeholder.textContent = '';
             placeholder.classList.add('hidden');
@@ -954,7 +1021,7 @@
         const payBtn = document.getElementById('pay-btn');
         const applyPromoBtn = document.getElementById('apply-promo');
         const continueBtn = document.getElementById('mobile-continue-btn');
-        const editableIds = ['customer-name', 'customer-email', 'customer-phone', 'customer-city', 'customer-state', 'customer-postal', 'customer-country', 'promo-input', 'terms-checkbox'];
+        const editableIds = ['customer-name', 'customer-email', 'customer-phone', 'promo-input', 'terms-checkbox'];
 
         if (payBtn) payBtn.disabled = disabled;
         if (applyPromoBtn) applyPromoBtn.disabled = disabled;
@@ -1057,15 +1124,22 @@
     }
 
     updateTotals();
-    fetchIntent({ requireCustomer: false, showLoading: false });
+    ensureStripeCardMounted();
+    refreshPayButtonState();
+    if (hasValidCustomerDetails()) {
+        fetchIntent({ showLoading: false, showInlineErrors: false });
+    }
     syncReservationStatus();
     setInterval(syncReservationStatus, 5000);
 
-    window.addEventListener('ticketly:theme-changed', function (event) {
-        if (!elements) return;
-        const theme = event?.detail?.theme === 'dark' ? 'dark' : 'light';
-        elements.update({ appearance: stripeAppearance(theme) });
+    window.addEventListener('ticketly:theme-changed', function () {
+        if (!cardElement) return;
+        try {
+            cardElement.update({ style: cardElementStyle(currentTheme()) });
+        } catch (e) {
+            // Card element styling updates are best-effort only.
+        }
     });
-})();
+});
 </script>
 @endsection

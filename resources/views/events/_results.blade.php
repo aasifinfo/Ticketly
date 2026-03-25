@@ -43,8 +43,8 @@
       </h3>
 
       <p class="text-gray-400 text-sm mb-1.5">
-        <time datetime="{{ $event->starts_at->toISOString() }}">{{ $event->starts_at->format('l M j, Y') }}</time>
-        <span> &middot; {{ $event->starts_at->format('g:ia') }}</span>
+        <time datetime="{{ $event->starts_at->toISOString() }}">{{ ticketly_format_date($event->starts_at) }}</time>
+        <span> &middot; {{ ticketly_format_time($event->starts_at) }}</span>
       </p>
 
       <p class="text-gray-500 text-sm mb-4 line-clamp-1">{{ $event->venue_name }}, {{ $event->city }}</p>

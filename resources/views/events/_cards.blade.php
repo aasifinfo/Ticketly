@@ -22,9 +22,8 @@
             </div>
 
             <!-- Date pill top right -->
-            <div class="absolute top-3 right-3 bg-black/60 backdrop-blur text-white text-xs font-bold px-2.5 py-1.5 rounded-lg text-center">
-                <div class="text-lg leading-none">{{ $event->starts_at->format('d') }}</div>
-                <div class="uppercase tracking-wide">{{ $event->starts_at->format('M') }}</div>
+            <div class="absolute top-3 right-3 max-w-[10rem] bg-black/60 backdrop-blur text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg text-center leading-4">
+                {{ ticketly_format_date($event->starts_at) }}
             </div>
         </div>
 

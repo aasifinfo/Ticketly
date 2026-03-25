@@ -40,8 +40,8 @@
                     <div>
                         <h2 class="font-extrabold text-white text-lg leading-tight">{{ $booking->event->title }}</h2>
                         <div class="mt-2 space-y-1 text-sm text-gray-400">
-                            <div class="flex items-center gap-1.5">📅 {{ $booking->event->starts_at->format('l, d F Y') }}</div>
-                            <div class="flex items-center gap-1.5">🕐 {{ $booking->event->starts_at->format('g:ia') }}</div>
+                            <div class="flex items-center gap-1.5">📅 {{ ticketly_format_date($booking->event->starts_at) }}</div>
+                            <div class="flex items-center gap-1.5">🕐 {{ ticketly_format_time($booking->event->starts_at) }}</div>
                             <div class="flex items-center gap-1.5">📍 {{ $booking->event->venue_name }}, {{ $booking->event->venue_address }}, {{ $booking->event->city }}</div>
                         </div>
                     </div>

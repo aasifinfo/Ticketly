@@ -7,6 +7,7 @@ use App\Jobs\SendEventCancellationNotification;
 use App\Models\Booking;
 use App\Models\Event;
 use App\Models\TicketTier;
+use App\Support\EventValidationRules;
 use App\Services\RefundService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -87,6 +88,7 @@ class EventController extends Controller
     {
         $organiser = $request->attributes->get('organiser');
         $validated = $this->validateEvent($request);
+        $validated = $this->prepareEventPayload($validated);
         $validated['is_featured'] = $request->boolean('is_featured');
 
         // Handle banner upload
@@ -117,6 +119,7 @@ class EventController extends Controller
         $event     = Event::where('id', $id)->where('organiser_id', $organiser->id)->firstOrFail();
 
         $validated = $this->validateEvent($request, $event->id);
+        $validated = $this->prepareEventPayload($validated);
         $validated['is_featured'] = $request->boolean('is_featured');
 
         if ($request->hasFile('banner')) {
@@ -127,7 +130,7 @@ class EventController extends Controller
         $validated['performer_lineup'] = $this->parseLineup($request);
         $event->update($validated);
 
-        return redirect()->route('organiser.events.edit', $event->id)
+        return redirect()->route('organiser.events.index')
             ->with('success', 'Event updated successfully.');
     }
 
@@ -238,24 +241,15 @@ class EventController extends Controller
     // Helpers
     private function validateEvent(Request $request, ?int $ignoreId = null): array
     {
-        return $request->validate([
-            'title'               => 'required|string|max:255',
-            'short_description'   => 'nullable|string|max:500',
-            'description'         => 'nullable|string',
-            'banner'              => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
-            'category'            => 'required|string|max:100',
-            'starts_at'           => 'required|date|after:now',
-            'ends_at'             => 'required|date|after:starts_at',
-            'venue_name'          => 'required|string|max:255',
-            'venue_address'       => 'required|string|max:255',
-            'city'                => 'required|string|max:100',
-            'country'             => 'nullable|string|max:100',
-            'postcode'            => 'nullable|string|max:20',
-            'parking_info'        => 'nullable|string|max:2000',
-            'refund_policy'       => 'nullable|string|max:2000',
-            'status'              => 'nullable|in:draft,published',
-            'is_featured'         => 'nullable|boolean',
-        ]);
+        return $request->validate(
+            EventValidationRules::rules($ignoreId !== null),
+            EventValidationRules::messages()
+        );
+    }
+
+    private function prepareEventPayload(array $validated): array
+    {
+        return $validated;
     }
 
     private function parseLineup(Request $request): ?array

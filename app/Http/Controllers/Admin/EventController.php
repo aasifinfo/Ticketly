@@ -10,6 +10,7 @@ use App\Models\Booking;
 use App\Models\Event;
 use App\Models\EmailLog;
 use App\Models\Organiser;
+use App\Support\EventValidationRules;
 use App\Services\RefundService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -62,7 +63,7 @@ class EventController extends Controller
 
     public function show(int $id)
     {
-        $event = Event::with(['organiser', 'ticketTiers', 'bookings'])
+        $event = Event::with(['organiser', 'ticketTiers', 'bookings', 'sponsorships'])
             ->withSum(['bookingItems as sold_tickets' => fn($q) => $q->whereHas('booking', fn($b) => $b->whereIn('status', ['paid', 'partially_refunded']))], 'quantity')
             ->withSum(['bookings as total_revenue' => fn($q) => $q->whereIn('status', ['paid', 'partially_refunded'])], 'total')
             ->findOrFail($id);
@@ -89,7 +90,7 @@ class EventController extends Controller
 
         $event->update($validated);
 
-        return redirect()->route('admin.events.edit', $event->id)
+        return redirect()->route('admin.events.index')
             ->with('success', 'Event updated successfully.');
     }
 
@@ -210,24 +211,10 @@ class EventController extends Controller
 
     private function validateEvent(Request $request, ?int $ignoreId = null): array
     {
-        return $request->validate([
-            'title'               => 'required|string|max:255',
-            'short_description'   => 'nullable|string|max:500',
-            'description'         => 'nullable|string',
-            'banner'              => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
-            'category'            => 'required|string|max:100',
-            'starts_at'           => 'required|date',
-            'ends_at'             => 'required|date|after:starts_at',
-            'venue_name'          => 'required|string|max:255',
-            'venue_address'       => 'required|string|max:255',
-            'city'                => 'required|string|max:100',
-            'country'             => 'nullable|string|max:100',
-            'postcode'            => 'nullable|string|max:20',
-            'parking_info'        => 'nullable|string|max:2000',
-            'refund_policy'       => 'nullable|string|max:2000',
-            'status'              => 'nullable|in:draft,published,cancelled',
-            'is_featured'         => 'nullable|boolean',
-        ]);
+        return $request->validate(
+            EventValidationRules::rules($ignoreId !== null),
+            EventValidationRules::messages()
+        );
     }
 
     private function storeBannerFile(\Illuminate\Http\UploadedFile $file): string

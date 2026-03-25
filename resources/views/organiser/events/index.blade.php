@@ -675,7 +675,7 @@
           <span class="events-item__badge">{{ $badgeLabel }}</span>
           <span class="events-item__approval {{ $approvalClass }}">{{ $approvalStatus }}</span>
         </div>
-       <div class="events-item__date">{{ $event->starts_at->format('l, F d, Y') }}</div> 
+       <div class="events-item__date">{{ ticketly_format_date($event->starts_at) }}</div> 
 
         <div class="events-item__stats">
           <span class="events-stat">
@@ -723,6 +723,10 @@
             <a href="{{ route('organiser.tiers.index', $event->id) }}" class="events-dropdown-link" role="menuitem">
               <span class="events-dropdown-icon">T</span>
               <span>Ticket tiers</span>
+            </a>
+            <a href="{{ route('organiser.sponsorships.index', $event->id) }}" class="events-dropdown-link" role="menuitem">
+              <span class="events-dropdown-icon">S</span>
+              <span>Manage Sponsorship</span>
             </a>
             <!-- <a href="#" class="events-dropdown-link" role="menuitem" aria-disabled="true">
               <span class="events-dropdown-icon">D</span>

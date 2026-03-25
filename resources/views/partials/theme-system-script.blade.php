@@ -8,7 +8,10 @@
       document.documentElement.setAttribute('data-theme', theme);
       localStorage.setItem('ticketly-theme', theme);
       document.querySelectorAll('[data-theme-label]').forEach(function (el) {
-        el.textContent = theme === 'light' ? 'Light' : 'Dark';
+        el.textContent = theme === 'light' ? 'Dark' : 'Light';
+      });
+      document.querySelectorAll('[data-theme-toggle]').forEach(function (btn) {
+        btn.setAttribute('aria-label', theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode');
       });
       window.dispatchEvent(new CustomEvent('ticketly:theme-changed', { detail: { theme: theme } }));
     }

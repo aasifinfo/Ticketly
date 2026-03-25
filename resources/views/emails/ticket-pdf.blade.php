@@ -1,5 +1,11 @@
 @php
-  $qrPayload = 'BOOKING REFERENCE: ' . $booking->reference;
+  $qrPayload = route('events.show', [
+      'slug' => $booking->event->slug,
+      'ticket_uuid' => $booking->ticket_uuid,
+      'booking_reference' => $booking->reference,
+  ]);
+  $portalFeePercentage = ticketly_format_percentage(ticketly_setting('portal_fee_percentage', config('ticketly.portal_fee_percentage', 10)));
+  $serviceFeePercentage = ticketly_format_percentage(ticketly_setting('service_fee_percentage', config('ticketly.service_fee_percentage', 5)));
   $qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' . urlencode($qrPayload);
   $qrBinary = @file_get_contents($qrApiUrl);
   $qrDataUri = $qrBinary ? 'data:image/png;base64,' . base64_encode($qrBinary) : null;
@@ -267,11 +273,11 @@
             </tr>
             <tr>
               <td class="k">Date</td>
-              <td class="v">{{ $booking->event->starts_at->format('l, d F Y') }}</td>
+              <td class="v">{{ ticketly_format_date($booking->event->starts_at) }}</td>
             </tr>
             <tr>
               <td class="k">Time</td>
-              <td class="v">{{ $booking->event->starts_at->format('g:ia') }} - {{ $booking->event->ends_at->format('g:ia') }}</td>
+              <td class="v">{{ ticketly_format_time($booking->event->starts_at) }} - {{ ticketly_format_time($booking->event->ends_at) }}</td>
             </tr>
             <tr>
               <td class="k">Venue</td>
@@ -309,11 +315,11 @@
               <td>{{ ticketly_money($booking->subtotal) }}</td>
             </tr>
             <tr>
-              <td>Portal Fee</td>
+              <td>Portal Fee ({{ $portalFeePercentage }}%)</td>
               <td>{{ ticketly_money($booking->portal_fee ?? 0) }}</td>
             </tr>
             <tr>
-              <td>Service Fee</td>
+              <td>Service Fee ({{ $serviceFeePercentage }}%)</td>
               <td>{{ ticketly_money($booking->service_fee ?? 0) }}</td>
             </tr>
             @if($booking->discount_amount > 0)

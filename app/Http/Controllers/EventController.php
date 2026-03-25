@@ -3,12 +3,25 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\Reservation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class EventController extends Controller
 {
     public function index(Request $request)
     {
+        $dateFrom = $request->filled('date_from') ? Carbon::parse($request->date_from)->startOfDay() : null;
+        $dateTo = $request->filled('date_to') ? Carbon::parse($request->date_to)->endOfDay() : null;
+
+        if ($dateFrom && $dateTo && $dateFrom->gt($dateTo)) {
+            [$dateFrom, $dateTo] = [$dateTo->copy()->startOfDay(), $dateFrom->copy()->endOfDay()];
+            $request->merge([
+                'date_from' => $dateFrom->toDateString(),
+                'date_to' => $dateTo->toDateString(),
+            ]);
+        }
+
         $query = Event::with(['ticketTiers', 'organiser'])
             ->where('status', 'published')
             ->where(function ($q) {
@@ -36,11 +49,11 @@ class EventController extends Controller
         if ($request->filled('date')) {
             $query->whereDate('starts_at', $request->date); // backward compatibility
         }
-        if ($request->filled('date_from')) {
-            $query->whereDate('starts_at', '>=', $request->date_from);
+        if ($dateFrom) {
+            $query->where('starts_at', '>=', $dateFrom);
         }
-        if ($request->filled('date_to')) {
-            $query->whereDate('starts_at', '<=', $request->date_to);
+        if ($dateTo) {
+            $query->where('starts_at', '<=', $dateTo);
         }
         if ($request->filled('price') && $request->price === 'free') {
             $query->whereHas('ticketTiers', fn($q) => $q->where('price', 0)->where('is_active', true));
@@ -91,9 +104,13 @@ class EventController extends Controller
         return view('events.index', compact('events', 'categories', 'cities'));
     }
 
-    public function show(string $slug)
+    public function show(Request $request, string $slug)
     {
-        $event = Event::with(['ticketTiers' => fn($q) => $q->where('is_active', true)->orderBy('price'), 'organiser'])
+        $event = Event::with([
+                'ticketTiers' => fn($q) => $q->where('is_active', true)->orderBy('price'),
+                'organiser',
+                'sponsorships',
+            ])
             ->where('slug', $slug)
             ->where('status', 'published')
             ->where(function ($q) {
@@ -101,6 +118,29 @@ class EventController extends Controller
                   ->orWhere('approval_status', 'approved');
             })
             ->firstOrFail();
+
+        $activeReservation = null;
+        if ($request->filled('reservation')) {
+            $activeReservation = Reservation::with('items')
+                ->where('token', $request->string('reservation'))
+                ->where('event_id', $event->id)
+                ->where('session_id', $request->session()->getId())
+                ->where('status', 'pending')
+                ->first();
+
+            if ($activeReservation?->isExpired()) {
+                $activeReservation = null;
+            }
+        }
+
+        $selectedTicketItems = collect(old('items', []));
+        if ($selectedTicketItems->isEmpty() && $activeReservation) {
+            $selectedTicketItems = $activeReservation->items
+                ->map(fn ($item) => [
+                    'ticket_tier_id' => (int) $item->ticket_tier_id,
+                    'quantity' => (int) $item->quantity,
+                ]);
+        }
 
         // Related events (same category, different event)
         $relatedEvents = Event::with('ticketTiers')
@@ -115,6 +155,6 @@ class EventController extends Controller
             ->limit(3)
             ->get();
 
-        return view('events.show', compact('event', 'relatedEvents'));
+        return view('events.show', compact('event', 'relatedEvents', 'activeReservation', 'selectedTicketItems'));
     }
 }

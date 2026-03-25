@@ -16,6 +16,7 @@ use App\Http\Controllers\Organiser\PayoutController;
 use App\Http\Controllers\Organiser\PromoCodeController;
 use App\Http\Controllers\Organiser\ProfileController;
 use App\Http\Controllers\Organiser\ScanController;
+use App\Http\Controllers\Organiser\SponsorshipController;
 use App\Http\Controllers\Organiser\StripeConnectController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
@@ -28,13 +29,11 @@ use App\Http\Controllers\Admin\PayoutController as AdminPayoutController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\EmailLogController as AdminEmailLogController;
-Route::get('/stripe-test', function () {
-    return config('services.stripe.secret');
-});
 // ── Public ──────────────────────────────────────────────────────────────────
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/events', [EventController::class, 'index'])->name('events.index');
 Route::get('/events/{slug}', [EventController::class, 'show'])->name('events.show');
+Route::get('/organiser/scan', [ScanController::class, 'index'])->name('organiser.scan.index');
 
 // ── Reservation & Checkout ───────────────────────────────────────────────────
 Route::post('/reserve', [ReservationController::class, 'store'])->name('reservation.store');
@@ -142,11 +141,16 @@ Route::middleware(['organiser.auth'])->group(function () {
     Route::put('/organiser/events/{eventId}/tiers/{id}', [TicketTierController::class, 'update'])->name('organiser.tiers.update');
     Route::delete('/organiser/events/{eventId}/tiers/{id}', [TicketTierController::class, 'destroy'])->name('organiser.tiers.destroy');
 
+    Route::get('/organiser/events/{eventId}/sponsorships', [SponsorshipController::class, 'index'])->name('organiser.sponsorships.index');
+    Route::get('/organiser/events/{eventId}/sponsorships/create', [SponsorshipController::class, 'create'])->name('organiser.sponsorships.create');
+    Route::post('/organiser/events/{eventId}/sponsorships', [SponsorshipController::class, 'store'])->name('organiser.sponsorships.store');
+    Route::get('/organiser/events/{eventId}/sponsorships/{id}/edit', [SponsorshipController::class, 'edit'])->name('organiser.sponsorships.edit');
+    Route::put('/organiser/events/{eventId}/sponsorships/{id}', [SponsorshipController::class, 'update'])->name('organiser.sponsorships.update');
+    Route::delete('/organiser/events/{eventId}/sponsorships/{id}', [SponsorshipController::class, 'destroy'])->name('organiser.sponsorships.destroy');
+
     Route::get('/organiser/orders', [OrganiserOrderController::class, 'index'])->name('organiser.orders.index');
     Route::get('/organiser/orders/{id}', [OrganiserOrderController::class, 'show'])->name('organiser.orders.show');
     // Route::post('/organiser/orders/{id}/refund', [OrganiserOrderController::class, 'refund'])->name('organiser.orders.refund');
-    Route::get('/organiser/scan', [ScanController::class, 'index'])->name('organiser.scan.index');
-    Route::post('/organiser/scan/validate', [ScanController::class, 'validateScan'])->name('organiser.scan.validate');
     Route::get('/organiser/payouts', [PayoutController::class, 'index'])->name('organiser.payouts.index');
     Route::get('/organiser/stripe/connect', [StripeConnectController::class, 'connect'])->name('organiser.stripe.connect');
     Route::get('/organiser/stripe/return', [StripeConnectController::class, 'return'])->name('organiser.stripe.return');

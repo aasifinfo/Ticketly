@@ -66,6 +66,9 @@
       <label class="text-xs text-gray-400 uppercase">Webhook Secret</label>
       <input type="text" name="stripe_webhook_secret" value="{{ $settings['stripe_webhook_secret'] }}"
         class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white">
+      <p class="mt-2 text-xs text-gray-500">
+        Use keys from a Stripe platform account with Stripe Connect enabled. Organiser onboarding cannot start until Connect is activated in Stripe Dashboard.
+      </p>
     </div>
 
     <div class="md:col-span-2 flex justify-end">

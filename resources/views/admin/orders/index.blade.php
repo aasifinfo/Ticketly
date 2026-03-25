@@ -49,12 +49,16 @@
       </thead>
       <tbody class="divide-y divide-gray-800">
         @forelse($orders as $order)
+        @php($ticketCount = max(1, (int) ($order->total_tickets ?? 0)))
         <tr>
           <td class="py-3 text-white font-semibold">{{ $order->reference }}</td>
           <td class="py-3 text-gray-300">{{ $order->customer_name }}</td>
           <td class="py-3 text-gray-400">{{ $order->event?->title }}</td>
-          <td class="py-3 text-gray-300">{{ ticketly_money($order->total) }}</td>
-          <td class="py-3 text-gray-400">{{ ucfirst($order->status) }}</td>
+          <td class="py-3">
+            <div class="text-gray-300">{{ ticketly_money($order->total) }}</div>
+            <div class="text-xs text-gray-500">{{ $ticketCount }} {{ $ticketCount === 1 ? 'ticket' : 'tickets' }}</div>
+          </td>
+          <td class="py-3 text-gray-400">{{ $order->status_badge['label'] }}</td>
           <td class="py-3 text-right">
             <a href="{{ route('admin.orders.show', $order->id) }}" class="text-emerald-400 hover:text-emerald-300">View</a>
           </td>

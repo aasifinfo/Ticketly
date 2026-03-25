@@ -147,9 +147,24 @@ class RefundService
             ->with('items.ticketTier')
             ->get();
 
-        $results = ['processed' => 0, 'failed' => 0, 'errors' => []];
+        $results = ['processed' => 0, 'failed' => 0, 'skipped' => 0, 'errors' => []];
 
         foreach ($bookings as $booking) {
+            $remainingTicketQuantity = (int) $booking->items->sum('quantity');
+            $remainingRefundableTotal = round((float) $booking->total, 2);
+
+            if ($remainingTicketQuantity <= 0 || $remainingRefundableTotal <= 0) {
+                $results['skipped']++;
+
+                Log::info('[RefundService] Skipping cancellation refund for booking with no refundable balance', [
+                    'booking' => $booking->reference,
+                    'remaining_ticket_quantity' => $remainingTicketQuantity,
+                    'remaining_total' => $remainingRefundableTotal,
+                ]);
+
+                continue;
+            }
+
             $result = $this->process($booking, null, $reason, true);
             if ($result['success']) {
                 $results['processed']++;
@@ -163,6 +178,7 @@ class RefundService
             'event_id'  => $eventId,
             'processed' => $results['processed'],
             'failed'    => $results['failed'],
+            'skipped'   => $results['skipped'],
         ]);
 
         return $results;

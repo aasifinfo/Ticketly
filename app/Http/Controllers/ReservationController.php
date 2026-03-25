@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Reservation;
 use App\Repositories\TicketReservationRepository;
 use App\Services\ServiceFeeCalculator;
 use Illuminate\Http\Request;
@@ -34,14 +35,31 @@ class ReservationController extends Controller
             'items'               => 'required|array|min:1|max:20',
             'items.*.ticket_tier_id' => 'required|integer|exists:ticket_tiers,id',
             'items.*.quantity'    => 'required|integer|min:1|max:20',
+            'replace_reservation_token' => 'nullable|string',
         ]);
 
         try {
-            $reservation = $this->repo->hold(
-                (int) $validated['event_id'],
-                session()->getId(),
-                $validated['items']
-            );
+            $reservation = null;
+            $replaceToken = $validated['replace_reservation_token'] ?? null;
+
+            if ($replaceToken) {
+                $existingReservation = Reservation::where('token', $replaceToken)
+                    ->where('session_id', session()->getId())
+                    ->where('event_id', (int) $validated['event_id'])
+                    ->first();
+
+                if ($existingReservation && $existingReservation->status === 'pending' && !$existingReservation->isExpired()) {
+                    $reservation = $this->repo->updateHold($existingReservation, $validated['items']);
+                }
+            }
+
+            if (!$reservation) {
+                $reservation = $this->repo->hold(
+                    (int) $validated['event_id'],
+                    session()->getId(),
+                    $validated['items']
+                );
+            }
 
             // Pre-calculate pricing for checkout display
             $pricing = ServiceFeeCalculator::total((float) $reservation->subtotal);

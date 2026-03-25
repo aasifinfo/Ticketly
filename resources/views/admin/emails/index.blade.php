@@ -35,7 +35,7 @@
           <td class="py-3 text-white font-semibold">{{ $log->to }}</td>
           <td class="py-3 text-gray-300">{{ $log->subject ?? $log->mailable }}</td>
           <td class="py-3 text-gray-400">{{ ucfirst($log->status) }}</td>
-          <td class="py-3 text-gray-500">{{ $log->created_at->format('d M Y H:i') }}</td>
+          <td class="py-3 text-gray-500">{{ ticketly_format_datetime($log->created_at) }}</td>
           <td class="py-3 text-right">
             @if($log->status === 'failed')
             <form method="POST" action="{{ route('admin.emails.retry', $log->id) }}">

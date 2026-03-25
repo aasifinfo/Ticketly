@@ -23,7 +23,7 @@
       </div>
       <div class="text-right">
         <div class="text-lg font-bold text-white">{{ ticketly_money($booking->total) }}</div>
-        <div class="text-xs text-gray-400">{{ ucfirst($booking->status) }}</div>
+        <div class="text-xs text-gray-400">{{ $booking->status_badge['label'] }}</div>
       </div>
     </div>
   </div>
@@ -81,7 +81,7 @@
           <span>{{ ticketly_money($booking->portal_fee ?? 0) }}</span>
         </div>
         <div class="flex items-center justify-between text-gray-300">
-          <span>Service Fee</span>
+          <span>Service Fee </span>
           <span>{{ ticketly_money($booking->service_fee ?? 0) }}</span>
         </div>
         @if(($booking->discount_amount ?? 0) > 0)
@@ -122,7 +122,7 @@
           @if($booking->refunded_at)
           <div class="flex items-center justify-between text-gray-300">
             <span>Refunded At</span>
-            <span>{{ $booking->refunded_at->format('d M Y H:i') }}</span>
+            <span>{{ ticketly_format_datetime($booking->refunded_at) }}</span>
           </div>
           @endif
           @if($booking->refund_reason)
@@ -149,7 +149,8 @@
         </div>
         <div>
           <label class="text-xs text-gray-400 uppercase">Reason</label>
-          <textarea name="refund_reason" rows="3" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white" required></textarea>
+          <textarea name="refund_reason" rows="3" maxlength="500" aria-describedby="refund-reason-full-error" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white" required></textarea>
+          <p id="refund-reason-full-error" class="refund-reason-error mt-2 hidden text-sm text-rose-400"></p>
         </div>
         <button class="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold">Process Refund</button>
       </form>
@@ -173,7 +174,8 @@
         </div>
         <div>
           <label class="text-xs text-gray-400 uppercase">Reason</label>
-          <textarea name="refund_reason" rows="3" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white" required></textarea>
+          <textarea name="refund_reason" rows="3" maxlength="500" aria-describedby="refund-reason-partial-error" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white" required></textarea>
+          <p id="refund-reason-partial-error" class="refund-reason-error mt-2 hidden text-sm text-rose-400"></p>
         </div>
         <button class="px-4 py-2 rounded-xl bg-amber-600 text-white text-sm font-semibold">Process Partial Refund</button>
       </form>
@@ -199,6 +201,27 @@
       setQty();
     });
     setQty();
+  })();
+
+  (function () {
+    const limitMessage = 'Refund reason maximum limit reached.';
+
+    document.querySelectorAll('textarea[name="refund_reason"][maxlength]').forEach((field) => {
+      const errorEl = field.parentElement?.querySelector('.refund-reason-error');
+      if (!errorEl) return;
+
+      const toggleLimitMessage = () => {
+        const maxLength = Number(field.getAttribute('maxlength') || 0);
+        const showMessage = maxLength > 0 && field.value.length >= maxLength;
+
+        errorEl.textContent = showMessage ? limitMessage : '';
+        errorEl.classList.toggle('hidden', !showMessage);
+      };
+
+      field.addEventListener('input', toggleLimitMessage);
+      field.addEventListener('blur', toggleLimitMessage);
+      toggleLimitMessage();
+    });
   })();
 </script>
 @endsection

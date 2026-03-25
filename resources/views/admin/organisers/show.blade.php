@@ -89,7 +89,7 @@
                 {{ ucfirst($event->approval_status ?? 'pending') }}
               </span>
             </td>
-            <td class="py-3 text-gray-500 text-right">{{ $event->starts_at?->format('d M Y') }}</td>
+            <td class="py-3 text-gray-500 text-right">{{ ticketly_format_date($event->starts_at) }}</td>
             <td class="py-3 text-right">
               <a class="text-emerald-400 hover:text-emerald-300" href="{{ route('admin.events.show', $event->id) }}">View</a>
             </td>

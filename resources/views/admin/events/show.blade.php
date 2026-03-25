@@ -9,7 +9,7 @@
   <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
     <div>
       <div class="text-lg font-bold text-white">{{ $event->title }}</div>
-      <div class="text-sm text-gray-400">{{ $event->organiser?->name }} · {{ $event->organiser?->company_name }} · {{ $event->starts_at?->format('d M Y, g:ia') }}</div>
+      <div class="text-sm text-gray-400">{{ $event->organiser?->name }} · {{ $event->organiser?->company_name }} · {{ ticketly_format_datetime($event->starts_at) }}</div>
       <div class="mt-2 flex flex-wrap gap-2">
         <span class="badge {{ $event->approval_status === 'approved' ? 'badge--positive' : ($event->approval_status === 'rejected' ? 'badge--danger' : 'badge--warning') }}">
           {{ ucfirst($event->approval_status ?? 'pending') }}
@@ -73,7 +73,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
             <div class="text-xs uppercase tracking-wider text-gray-500">Date & Time</div>
-            <div class="mt-1 text-white">{{ $event->starts_at?->format('d M Y, g:ia') }} - {{ $event->ends_at?->format('d M Y, g:ia') }}</div>
+            <div class="mt-1 text-white">{{ ticketly_format_datetime($event->starts_at) }} - {{ ticketly_format_datetime($event->ends_at) }}</div>
           </div>
           <div>
             <div class="text-xs uppercase tracking-wider text-gray-500">Category</div>
@@ -117,11 +117,11 @@
           </div>
           <div>
             <div class="text-xs uppercase tracking-wider text-gray-500">Created</div>
-            <div class="mt-1 text-white">{{ $event->created_at?->format('d M Y, g:ia') }}</div>
+            <div class="mt-1 text-white">{{ ticketly_format_datetime($event->created_at) }}</div>
           </div>
           <div>
             <div class="text-xs uppercase tracking-wider text-gray-500">Last Updated</div>
-            <div class="mt-1 text-white">{{ $event->updated_at?->format('d M Y, g:ia') }}</div>
+            <div class="mt-1 text-white">{{ ticketly_format_datetime($event->updated_at) }}</div>
           </div>
           <div>
             <div class="text-xs uppercase tracking-wider text-gray-500">Featured</div>
@@ -171,6 +171,33 @@
           @endif
         </div>
       </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+        <h2 class="text-sm font-semibold text-white mb-4">Performer Details</h2>
+
+        @if(empty($event->performer_lineup))
+          <p class="text-sm text-gray-400">No performer details added for this event.</p>
+        @else
+          <div class="divide-y divide-gray-800">
+            @foreach($event->performer_lineup as $performer)
+              <div class="grid grid-cols-1 gap-4 py-4 first:pt-0 last:pb-0 md:grid-cols-3 text-sm">
+                <div>
+                  <div class="text-xs uppercase tracking-wider text-gray-500">Performer Name</div>
+                  <div class="mt-1 font-semibold text-white">{{ $performer['name'] ?? 'N/A' }}</div>
+                </div>
+                <div>
+                  <div class="text-xs uppercase tracking-wider text-gray-500">Role / Band</div>
+                  <div class="mt-1 text-gray-300">{{ $performer['role'] ?? 'N/A' }}</div>
+                </div>
+                <div>
+                  <div class="text-xs uppercase tracking-wider text-gray-500">Time</div>
+                  <div class="mt-1 text-gray-300">{{ $performer['time'] ?? 'N/A' }}</div>
+                </div>
+              </div>
+            @endforeach
+          </div>
+        @endif
+      </div>
     </div>
 
     <div class="space-y-6">
@@ -185,8 +212,8 @@
       <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
         <h2 class="text-sm font-semibold text-white mb-4">Approval</h2>
         <div class="text-sm text-white">Status: {{ ucfirst($event->approval_status ?? 'pending') }}</div>
-        <div class="text-xs text-gray-500 mt-2">Approved at: {{ $event->approved_at?->format('d M Y, g:ia') ?? '-' }}</div>
-        <div class="text-xs text-gray-500">Rejected at: {{ $event->rejected_at?->format('d M Y, g:ia') ?? '-' }}</div>
+        <div class="text-xs text-gray-500 mt-2">Approved at: {{ ticketly_format_datetime($event->approved_at, '-') }}</div>
+        <div class="text-xs text-gray-500">Rejected at: {{ ticketly_format_datetime($event->rejected_at, '-') }}</div>
       </div>
 
       <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
@@ -224,6 +251,34 @@
         </tbody>
       </table>
     </div>
+  </div>
+
+  <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+    <h2 class="text-sm font-semibold text-white mb-4">Sponsors</h2>
+
+    @if($event->sponsorships->isEmpty())
+      <p class="text-sm text-gray-400">No sponsors added for this event.</p>
+    @else
+      <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        @foreach($event->sponsorships as $sponsorship)
+          @php
+            $initials = \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($sponsorship->name, 0, 2));
+          @endphp
+          <div class="rounded-2xl border border-gray-800 bg-gray-950/70 p-4">
+            <div class="flex aspect-square items-center justify-center overflow-hidden rounded-2xl border border-gray-800 bg-gradient-to-br from-slate-800 to-slate-900">
+              @if($sponsorship->photo_url)
+                <img src="{{ $sponsorship->photo_url }}" alt="{{ $sponsorship->name }}" class="h-full w-full object-cover">
+              @else
+                <span class="text-lg font-extrabold tracking-[0.2em] text-gray-300">{{ $initials }}</span>
+              @endif
+            </div>
+            @if($sponsorship->name)
+              <p class="mt-3 truncate text-center text-sm font-semibold text-white">{{ $sponsorship->name }}</p>
+            @endif
+          </div>
+        @endforeach
+      </div>
+    @endif
   </div>
 </div>
 @endsection

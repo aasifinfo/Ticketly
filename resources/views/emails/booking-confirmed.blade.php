@@ -48,6 +48,10 @@
 </style>
 </head>
 <body>
+@php
+  $portalFeePercentage = ticketly_format_percentage(ticketly_setting('portal_fee_percentage', config('ticketly.portal_fee_percentage', 10)));
+  $serviceFeePercentage = ticketly_format_percentage(ticketly_setting('service_fee_percentage', config('ticketly.service_fee_percentage', 5)));
+@endphp
 <div class="wrapper">
 
   <div class="header">
@@ -64,8 +68,8 @@
     <div class="section">
       <div class="section-title">Event Details</div>
       <div class="event-name">{{ $booking->event->title }}</div>
-      <div class="meta">📅 <span>{{ $booking->event->starts_at->format('l, d F Y') }}</span></div>
-      <div class="meta">🕐 <span>{{ $booking->event->starts_at->format('g:ia') }} – {{ $booking->event->ends_at->format('g:ia') }}</span></div>
+      <div class="meta">📅 <span>{{ ticketly_format_date($booking->event->starts_at) }}</span></div>
+      <div class="meta">🕐 <span>{{ ticketly_format_time($booking->event->starts_at) }} – {{ ticketly_format_time($booking->event->ends_at) }}</span></div>
       <div class="meta">📍 <span>{{ $booking->event->venue_name }}, {{ $booking->event->venue_address }}, {{ $booking->event->city }}</span></div>
     </div>
 
@@ -81,11 +85,11 @@
       @endforeach
       <div class="divider"></div>
       <div class="price-row"><span>Subtotal:</span> <span>&nbsp;{{ ticketly_money($booking->subtotal) }}</span></div>
-      <div class="price-row"><span>Portal Fee: </span> 
+      <div class="price-row"><span>Portal Fee ({{ $portalFeePercentage }}%): </span> 
       <span>&nbsp;{{ ticketly_money( $booking->portal_fee ?? 0) }}</span>
       </div>
       <div class="price-row">
-      <span>Service Fee: </span>
+      <span>Service Fee ({{ $serviceFeePercentage }}%): </span>
       <span>&nbsp;{{ ticketly_money( $booking->service_fee ?? 0) }}</span>
       </div>
       @if($booking->discount_amount > 0)

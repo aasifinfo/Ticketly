@@ -56,32 +56,41 @@ class SendBookingConfirmation implements ShouldQueue
         }
 
         // ── Send Email ─────────────────────────────────────────────
-        try {
-            Mail::to($booking->customer_email)
-                ->send(new BookingConfirmed($booking, $ticketContent, $ticketMime, $ticketExt));
+        $shouldSendEmail = !empty($booking->customer_email)
+            && !str_ends_with(strtolower((string) $booking->customer_email), '@ticketly.invalid');
 
-            Log::info('[SendBookingConfirmation] Email sent', ['to' => $booking->customer_email]);
-            EmailLog::logSent(
-                $booking->customer_email,
-                'Booking confirmed - ' . $booking->reference,
-                'booking_confirmed',
-                $booking,
-                ['booking_id' => $booking->id]
-            );
-        } catch (\Exception $e) {
-            Log::error('[SendBookingConfirmation] Email failed', [
+        if ($shouldSendEmail) {
+            try {
+                Mail::to($booking->customer_email)
+                    ->send(new BookingConfirmed($booking, $ticketContent, $ticketMime, $ticketExt));
+
+                Log::info('[SendBookingConfirmation] Email sent', ['to' => $booking->customer_email]);
+                EmailLog::logSent(
+                    $booking->customer_email,
+                    'Booking confirmed - ' . $booking->reference,
+                    'booking_confirmed',
+                    $booking,
+                    ['booking_id' => $booking->id]
+                );
+            } catch (\Exception $e) {
+                Log::error('[SendBookingConfirmation] Email failed', [
+                    'booking' => $booking->reference,
+                    'error'   => $e->getMessage(),
+                ]);
+                EmailLog::logFailed(
+                    $booking->customer_email,
+                    'Booking confirmed - ' . $booking->reference,
+                    $e->getMessage(),
+                    'booking_confirmed',
+                    $booking,
+                    ['booking_id' => $booking->id]
+                );
+                throw $e; // Re-throw so queue retries
+            }
+        } else {
+            Log::info('[SendBookingConfirmation] Email skipped for guest checkout', [
                 'booking' => $booking->reference,
-                'error'   => $e->getMessage(),
             ]);
-            EmailLog::logFailed(
-                $booking->customer_email,
-                'Booking confirmed - ' . $booking->reference,
-                $e->getMessage(),
-                'booking_confirmed',
-                $booking,
-                ['booking_id' => $booking->id]
-            );
-            throw $e; // Re-throw so queue retries
         }
 
         // ── Send SMS ───────────────────────────────────────────────
@@ -115,7 +124,7 @@ class SendBookingConfirmation implements ShouldQueue
 
     private function buildBookingSms(Booking $booking): string
     {
-        $date    = $booking->event->starts_at->format('d M Y, g:ia');
+        $date    = ticketly_format_datetime($booking->event->starts_at);
         $tickets = $booking->items->sum('quantity');
         return "🎟 Ticketly – Booking Confirmed!\n"
             . "Ref: {$booking->reference}\n"

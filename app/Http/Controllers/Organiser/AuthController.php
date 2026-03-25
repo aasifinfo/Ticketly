@@ -28,12 +28,22 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
+        $request->merge([
+            'phone' => trim((string) $request->input('phone')),
+            'email' => strtolower(trim((string) $request->email)),
+        ]);
+
         $validated = $request->validate([
-            'name'         => 'required|string|max:100',
-            'company_name' => 'nullable|string|max:150',
-            'email'        => 'required|email|max:150|unique:organisers,email',
-            'password'     => 'required|string|min:8|confirmed',
-            'phone'        => 'required|string|max:15|unique:organisers,phone',
+            'name'         => 'required|string|max:40',
+            'company_name' => 'nullable|string|max:50',
+            'email' => 'required|email:rfc,dns|max:100|unique:organisers,email',
+            'password'     => 'required|string|min:8|max:15|confirmed',
+            'phone'        => ['bail', 'required', 'digits:11', 'starts_with:07', 'unique:organisers,phone'],
+        ], [
+            'phone.required' => 'Phone number is required.',
+            'phone.digits' => 'Phone number must be exactly 11 digits and contain numbers only.',
+            'phone.starts_with' => 'Phone number must start with 07.',
+            'phone.unique' => 'This phone number is already registered.',
         ]);
 
         $organiser = Organiser::create([
@@ -194,13 +204,19 @@ class AuthController extends Controller
         $validated = $request->validate([
             'token'    => 'required|string',
             'email'    => 'required|email',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:8|max:15|confirmed',
         ]);
 
         $organiser = Organiser::where('email', $validated['email'])->first();
 
         if (!$organiser || !$organiser->isResetTokenValid($validated['token'])) {
             return back()->withErrors(['token' => 'This password reset link is invalid or has expired.']);
+        }
+
+        if (Hash::check($validated['password'], $organiser->password)) {
+            return back()
+                ->withErrors(['password' => 'You cannot use a previously used password. please Try with another password.'])
+                ->withInput($request->only('email', 'token'));
         }
 
         $organiser->update(['password' => Hash::make($validated['password'])]);

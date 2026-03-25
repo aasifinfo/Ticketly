@@ -31,7 +31,7 @@
 
     <div class="section">
       <div class="section-title">Your Booking</div>
-      <div style="color:#d1d5db;font-size:14px;line-height:2">📋 Ref: <strong>{{ $booking->reference }}</strong><br>📅 Originally: {{ $booking->event->starts_at->format('l, d F Y · g:ia') }}<br>📍 {{ $booking->event->venue_name }}, {{ $booking->event->city }}</div>
+      <div style="color:#d1d5db;font-size:14px;line-height:2">📋 Ref: <strong>{{ $booking->reference }}</strong><br>📅 Originally: {{ ticketly_format_datetime($booking->event->starts_at) }}<br>📍 {{ $booking->event->venue_name }}, {{ $booking->event->city }}</div>
     </div>
 
     <div class="reason-box">

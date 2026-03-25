@@ -19,12 +19,12 @@
         <input type="hidden" name="email" value="{{ $email }}">
         <div>
           <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">New Password</label>
-          <input type="password" name="password" required minlength="8"
+          <input type="password" name="password" required minlength="8" maxlength="15"
                  class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Min. 8 characters">
         </div>
         <div>
           <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Confirm New Password</label>
-          <input type="password" name="password_confirmation" required
+          <input type="password" name="password_confirmation" required maxlength="15"
                  class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Repeat password">
         </div>
         <button type="submit" class="w-full py-3.5 font-extrabold text-white rounded-xl text-sm" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">

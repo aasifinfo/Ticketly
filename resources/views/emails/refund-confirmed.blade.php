@@ -81,7 +81,7 @@
       <div class="section-title">Original Booking</div>
       <div class="info-grid">
         <div class="info-cell"><div class="label">Event</div><div class="value">{{ \Illuminate\Support\Str::limit($booking->event->title, 30) }}</div></div>
-        <div class="info-cell"><div class="label">Date</div><div class="value">{{ $booking->event->starts_at->format('d M Y') }}</div></div>
+        <div class="info-cell"><div class="label">Date</div><div class="value">{{ ticketly_format_date($booking->event->starts_at) }}</div></div>
         <div class="info-cell"><div class="label">Original Total</div><div class="value">{{ ticketly_money($originalTotal) }}</div></div>
         <div class="info-cell"><div class="label">Refund</div><div class="value" style="color:#34d399">{{ ticketly_money($refundAmount) }}</div></div>
       </div>

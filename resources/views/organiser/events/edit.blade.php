@@ -6,7 +6,6 @@
 
 @section('head')
 <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <style>
@@ -303,6 +302,27 @@
     cursor: pointer;
   }
 
+  .event-input--native-datetime {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    padding-right: 0.85rem;
+  }
+
+  .event-input--native-datetime::-webkit-calendar-picker-indicator {
+    opacity: 0;
+  }
+
+  .event-input--datetime-display {
+    padding-right: 2.65rem;
+    cursor: pointer;
+  }
+
+  .event-datetime-wrap--native .event-datetime-trigger {
+    display: inline-flex;
+  }
+
   .event-datetime-trigger {
     position: absolute;
     top: 50%;
@@ -327,14 +347,28 @@
 
   .flatpickr-calendar {
     border-radius: 0.9rem;
-    border: 1px solid #d7dce5;
+    border: 1px solid var(--event-calendar-border);
     box-shadow: 0 22px 55px rgba(15, 23, 42, 0.18);
     overflow: hidden;
+    background: var(--event-calendar-bg);
+    color: var(--event-calendar-text);
+    z-index: 120 !important;
   }
 
   .flatpickr-months,
   .flatpickr-weekdays {
-    background: #f8fafc;
+    background: var(--event-calendar-header);
+    color: var(--event-calendar-header-text);
+  }
+
+  .flatpickr-weekday,
+  .flatpickr-current-month,
+  .flatpickr-current-month .flatpickr-monthDropdown-months,
+  .flatpickr-current-month input.cur-year,
+  .flatpickr-months .flatpickr-prev-month,
+  .flatpickr-months .flatpickr-next-month {
+    color: var(--event-calendar-header-text);
+    fill: var(--event-calendar-header-text);
   }
 
   .flatpickr-current-month {
@@ -352,12 +386,23 @@
   .flatpickr-day.selected:hover,
   .flatpickr-day.startRange:hover,
   .flatpickr-day.endRange:hover {
-    background: #7c3aed;
-    border-color: #7c3aed;
+    background: var(--event-calendar-accent);
+    border-color: var(--event-calendar-accent);
+  }
+
+  .flatpickr-day:hover,
+  .flatpickr-day:focus {
+    background: var(--event-calendar-hover);
+    border-color: var(--event-calendar-hover);
+  }
+
+  .flatpickr-day.today {
+    border-color: var(--event-calendar-accent);
   }
 
   .flatpickr-time {
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--event-calendar-border);
+    background: var(--event-calendar-bg);
   }
 
   .flatpickr-time input:hover,
@@ -366,7 +411,7 @@
   .flatpickr-time .flatpickr-am-pm:focus,
   .flatpickr-current-month .flatpickr-monthDropdown-months:hover,
   .flatpickr-current-month input.cur-year:hover {
-    background: rgba(124, 58, 237, 0.08);
+    background: var(--event-calendar-hover);
   }
 
   .event-input:focus,
@@ -453,6 +498,24 @@
     color: var(--event-muted);
   }
 
+  .event-validation-notes {
+    display: grid;
+    justify-items: end;
+    gap: 0.25rem;
+    grid-column: 1 / -1;
+    text-align: right;
+  }
+
+  .event-field-error {
+    display: none;
+    font-size: 0.7rem;
+    color: #dc2626;
+  }
+
+  .event-field-error.is-visible {
+    display: block;
+  }
+
   .event-section-divider {
     height: 1px;
     background: var(--event-divider);
@@ -522,11 +585,16 @@
     border: 1px solid rgba(239, 68, 68, 0.18);
     border-radius: 1rem;
     padding: 0.9rem 1rem;
+  }
+
+  .event-error-card ul {
+    margin: 0;
+    padding-left: 1.15rem;
     display: grid;
     gap: 0.35rem;
   }
 
-  .event-error-card div {
+  .event-error-card li {
     color: #dc2626;
     font-size: 0.8rem;
   }
@@ -567,6 +635,10 @@
     background: var(--event-input-bg);
   }
 
+  .event-create-page .ck.ck-toolbar .ck-toolbar__separator {
+    background: var(--event-input-border);
+  }
+
   .event-create-page .ck.ck-editor__main > .ck-editor__editable {
     min-height: 11rem;
     border: 1px solid var(--event-input-border);
@@ -579,6 +651,45 @@
   .event-create-page .ck.ck-editor__main > .ck-editor__editable:focus {
     border-color: rgba(124, 58, 237, 0.45);
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+  }
+
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-button,
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-button .ck-button__label,
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-dropdown__button,
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-dropdown__panel {
+    color: #e2e8f0 !important;
+  }
+
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-button .ck-icon,
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-button .ck-icon *,
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-dropdown__arrow {
+    color: #e2e8f0 !important;
+    fill: currentColor !important;
+    stroke: currentColor !important;
+  }
+
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-button:hover:not(.ck-disabled),
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-button:focus:not(.ck-disabled),
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-button.ck-on,
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-dropdown__button:hover:not(.ck-disabled),
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-dropdown__button:focus:not(.ck-disabled) {
+    background: rgba(139, 92, 246, 0.18) !important;
+    color: #f8fafc !important;
+  }
+
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-button:hover:not(.ck-disabled) .ck-icon,
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-button:hover:not(.ck-disabled) .ck-icon *,
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-button:focus:not(.ck-disabled) .ck-icon,
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-button:focus:not(.ck-disabled) .ck-icon *,
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-button.ck-on .ck-icon,
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-button.ck-on .ck-icon *,
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-dropdown__button:hover:not(.ck-disabled) .ck-icon,
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-dropdown__button:hover:not(.ck-disabled) .ck-icon *,
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-dropdown__button:focus:not(.ck-disabled) .ck-icon,
+  :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-dropdown__button:focus:not(.ck-disabled) .ck-icon * {
+    color: #f8fafc !important;
+    fill: currentColor !important;
+    stroke: currentColor !important;
   }
 
   @media (max-width: 767px) {
@@ -612,6 +723,11 @@
     .event-hint {
       text-align: left;
       margin-top: 0;
+    }
+
+    .event-validation-notes {
+      justify-items: start;
+      text-align: left;
     }
 
     .event-actions > *,
@@ -659,6 +775,13 @@
     --event-placeholder: #9ca3af;
     --event-datetime-trigger: #111827;
     --event-upload-bg: #ffffff;
+    --event-calendar-bg: #ffffff;
+    --event-calendar-border: #d8dde7;
+    --event-calendar-header: linear-gradient(135deg, #312e81, #6d28d9);
+    --event-calendar-header-text: #ffffff;
+    --event-calendar-text: #111827;
+    --event-calendar-accent: #6d28d9;
+    --event-calendar-hover: rgba(109, 40, 217, 0.08);
   }
 
   :root[data-theme='dark'] .event-create-page {
@@ -675,6 +798,13 @@
     --event-placeholder: #64748b;
     --event-datetime-trigger: #f8fafc;
     --event-upload-bg: #0f172a;
+    --event-calendar-bg: #101827;
+    --event-calendar-border: #334155;
+    --event-calendar-header: linear-gradient(135deg, #111827, #312e81);
+    --event-calendar-header-text: #f8fafc;
+    --event-calendar-text: #e2e8f0;
+    --event-calendar-accent: #8b5cf6;
+    --event-calendar-hover: rgba(139, 92, 246, 0.14);
   }
 
   :root[data-theme='dark'] .event-upload__action,
@@ -726,7 +856,7 @@
     <div class="event-overview-meta">
       <span class="event-live-badge">{{ strtolower($event->status_badge['label']) }}</span>
       @if($event->isCancelled())
-      <span class="event-cancelled-note">Cancelled {{ $event->cancelled_at?->format('d M Y') }}</span>
+      <span class="event-cancelled-note">Cancelled {{ ticketly_format_date($event->cancelled_at) }}</span>
       @endif
     </div>
 
@@ -749,6 +879,7 @@
         <button type="button" onclick="document.getElementById('cancel-modal').classList.remove('hidden')" class="event-status-btn event-status-btn--danger">Cancel Event</button>
       @endif
       <a href="{{ route('organiser.tiers.index', $event->id) }}" class="event-status-btn">Manage Tiers</a>
+      <a href="{{ route('organiser.sponsorships.index', $event->id) }}" class="event-status-btn">Manage Sponsorship</a>
       <a href="{{ $previewUrl }}" target="_blank" class="event-status-btn">Preview</a>
     </div>
   </div>
@@ -763,13 +894,17 @@
   @endif
 </div>
 
-<form action="{{ route('organiser.events.update', $event->id) }}" method="POST" enctype="multipart/form-data" class="event-create-form">
+<form id="event-form" action="{{ route('organiser.events.update', $event->id) }}" method="POST" enctype="multipart/form-data" class="event-create-form" novalidate>
 @csrf
 @method('PUT')
 
 @if($errors->any())
 <div class="event-error-card">
-  @foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach
+  <ul>
+    @foreach($errors->all() as $e)
+    <li>{{ $e }}</li>
+    @endforeach
+  </ul>
 </div>
 @endif
 
@@ -797,9 +932,9 @@
         <label class="event-upload__action">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 16V8m0 0-3 3m3-3 3 3M6.75 16.75v.5A1.75 1.75 0 0 0 8.5 19h7a1.75 1.75 0 0 0 1.75-1.75v-.5"/></svg>
           <span>Upload poster</span>
-          <input type="file" name="banner" accept="image/*">
+          <input type="file" name="banner" id="banner" class="js-banner-input" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp">
         </label>
-        <div class="event-upload__meta">PNG, JPG, WebP · Max 4MB</div>
+        <div class="event-upload__meta"><span class="js-banner-file-name">No file selected</span><br>PNG, JPG, WebP · Max 4MB</div>
       </div>
     </div>
   </div>
@@ -827,12 +962,12 @@
   <div class="event-grid">
     <div class="event-field">
       <label class="event-label">Event Title *</label>
-      <input type="text" name="title" value="{{ old('title', $event->title) }}" required class="event-input">
+      <input type="text" name="title" value="{{ old('title', $event->title) }}" required maxlength="50" class="event-input">
     </div>
 
     <div class="event-field">
       <label class="event-label">Short Description</label>
-      <input type="text" name="short_description" value="{{ old('short_description', $event->short_description) }}" maxlength="500" class="event-input">
+      <input type="text" name="short_description" value="{{ old('short_description', $event->short_description) }}" maxlength="255" class="event-input">
     </div>
 
     <div class="event-field">
@@ -846,7 +981,8 @@
 
     <div class="event-field">
       <label class="event-label">Full Description</label>
-      <textarea id="description" name="description" rows="6" class="event-textarea">{{ old('description', $event->description) }}</textarea>
+      <textarea id="description" name="description" rows="6" maxlength="5000" class="event-textarea">{{ old('description', $event->description) }}</textarea>
+      <div class="event-inline-note">Maximum 5000 characters.</div>
     </div>
   </div>
 </section>
@@ -859,7 +995,7 @@
       </span>
       <div>
         <h2 class="event-card__title">Date &amp; Time</h2>
-        <p class="event-card__subtitle">Choose when your event starts and ends</p>
+        <p class="event-card__subtitle">Choose when your event starts and ends. Tickets can only be validated within this time window.</p>
       </div>
     </div>
   </div>
@@ -868,8 +1004,8 @@
     <div class="event-field">
       <label class="event-label">Start Date &amp; Time *</label>
       <div class="event-datetime-wrap">
-        <input type="text" name="starts_at" value="{{ old('starts_at', $event->starts_at->format('Y-m-d\TH:i')) }}" required class="event-input event-input--datetime js-datetime-input" placeholder="Select start date and time" autocomplete="off">
-        <button type="button" class="event-datetime-trigger" onclick="openDateTimePicker(this)" aria-label="Open start date and time picker">
+        <input type="datetime-local" name="starts_at" value="{{ old('starts_at', $event->starts_at->format('Y-m-d\TH:i')) }}" required class="event-input event-input--datetime js-datetime-input" autocomplete="off">
+        <button type="button" class="event-datetime-trigger" onclick="openDateTimePicker(event, this)" aria-label="Open start date and time picker">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7.75 4.75v3.5m8.5-3.5v3.5M5 8.25h14M6.5 19.25h11a1.75 1.75 0 0 0 1.75-1.75v-9A1.75 1.75 0 0 0 17.5 6.75h-11A1.75 1.75 0 0 0 4.75 8.5v9A1.75 1.75 0 0 0 6.5 19.25Z"/></svg>
         </button>
       </div>
@@ -877,13 +1013,36 @@
     <div class="event-field">
       <label class="event-label">End Date &amp; Time *</label>
       <div class="event-datetime-wrap">
-        <input type="text" name="ends_at" value="{{ old('ends_at', $event->ends_at->format('Y-m-d\TH:i')) }}" required class="event-input event-input--datetime js-datetime-input" placeholder="Select end date and time" autocomplete="off">
-        <button type="button" class="event-datetime-trigger" onclick="openDateTimePicker(this)" aria-label="Open end date and time picker">
+        <input type="datetime-local" name="ends_at" value="{{ old('ends_at', $event->ends_at->format('Y-m-d\TH:i')) }}" required class="event-input event-input--datetime js-datetime-input" autocomplete="off">
+        <button type="button" class="event-datetime-trigger" onclick="openDateTimePicker(event, this)" aria-label="Open end date and time picker">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7.75 4.75v3.5m8.5-3.5v3.5M5 8.25h14M6.5 19.25h11a1.75 1.75 0 0 0 1.75-1.75v-9A1.75 1.75 0 0 0 17.5 6.75h-11A1.75 1.75 0 0 0 4.75 8.5v9A1.75 1.75 0 0 0 6.5 19.25Z"/></svg>
         </button>
       </div>
     </div>
+    <div class="event-field">
+      <label class="event-label">Start Validate Ticket *</label>
+      <div class="event-datetime-wrap">
+        <input type="datetime-local" id="ticket_validation_starts_at" name="ticket_validation_starts_at" value="{{ old('ticket_validation_starts_at', $event->ticketValidationStartsAt()?->format('Y-m-d\TH:i')) }}" required class="event-input event-input--datetime js-datetime-input" autocomplete="off">
+        <button type="button" class="event-datetime-trigger" onclick="openDateTimePicker(event, this)" aria-label="Open validation start date and time picker">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7.75 4.75v3.5m8.5-3.5v3.5M5 8.25h14M6.5 19.25h11a1.75 1.75 0 0 0 1.75-1.75v-9A1.75 1.75 0 0 0 17.5 6.75h-11A1.75 1.75 0 0 0 4.75 8.5v9A1.75 1.75 0 0 0 6.5 19.25Z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="event-field">
+      <label class="event-label">End Validate Ticket *</label>
+      <div class="event-datetime-wrap">
+        <input type="datetime-local" id="ticket_validation_ends_at" name="ticket_validation_ends_at" value="{{ old('ticket_validation_ends_at', $event->ticketValidationEndsAt()?->format('Y-m-d\TH:i')) }}" required class="event-input event-input--datetime js-datetime-input" autocomplete="off">
+        <button type="button" class="event-datetime-trigger" onclick="openDateTimePicker(event, this)" aria-label="Open validation end date and time picker">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7.75 4.75v3.5m8.5-3.5v3.5M5 8.25h14M6.5 19.25h11a1.75 1.75 0 0 0 1.75-1.75v-9A1.75 1.75 0 0 0 17.5 6.75h-11A1.75 1.75 0 0 0 4.75 8.5v9A1.75 1.75 0 0 0 6.5 19.25Z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="event-validation-notes">
+      <div class="event-inline-note">Default: event end date and time. You can change it manually.</div>
+      <div class="event-inline-note">Default: 2 hours before event start date and time.</div>
+    </div>
   </div>
+  <div class="event-hint">Validation works between the selected validation start and end date-time.</div>
 </section>
 
 <section class="event-card">
@@ -902,19 +1061,19 @@
   <div class="event-grid event-grid--2">
     <div class="event-field">
       <label class="event-label">Venue Name *</label>
-      <input type="text" name="venue_name" value="{{ old('venue_name', $event->venue_name) }}" required class="event-input">
+      <input type="text" name="venue_name" value="{{ old('venue_name', $event->venue_name) }}" required maxlength="50" class="event-input">
     </div>
     <div class="event-field">
       <label class="event-label">City *</label>
-      <input type="text" name="city" value="{{ old('city', $event->city) }}" required class="event-input">
+      <input type="text" name="city" value="{{ old('city', $event->city) }}" required maxlength="50" class="event-input">
     </div>
     <div class="event-field event-field--span-2">
       <label class="event-label">Address *</label>
-      <input type="text" name="venue_address" value="{{ old('venue_address', $event->venue_address) }}" required class="event-input">
+      <input type="text" name="venue_address" value="{{ old('venue_address', $event->venue_address) }}" required maxlength="300" class="event-input">
     </div>
     <div class="event-field">
       <label class="event-label">Postcode</label>
-      <input type="text" name="postcode" value="{{ old('postcode', $event->postcode) }}" class="event-input">
+      <input type="text" name="postcode" value="{{ old('postcode', $event->postcode) }}" maxlength="10" class="event-input">
     </div>
   </div>
 </section>
@@ -938,15 +1097,15 @@
     <div class="event-lineup-row lineup-row">
       <div class="event-field">
         <label class="event-label">Performer Name</label>
-        <input type="text" name="lineup_names[]" value="{{ $performer['name'] ?? '' }}" placeholder="Performer name" class="event-input">
+        <input type="text" name="lineup_names[]" value="{{ $performer['name'] ?? '' }}" maxlength="50" placeholder="Performer name" class="event-input">
       </div>
       <div class="event-field">
         <label class="event-label">Role / Band</label>
-        <input type="text" name="lineup_roles[]" value="{{ $performer['role'] ?? '' }}" placeholder="Role / DJ / Band" class="event-input">
+        <input type="text" name="lineup_roles[]" value="{{ $performer['role'] ?? '' }}" maxlength="50" placeholder="Role / DJ / Band" class="event-input">
       </div>
       <div class="event-field">
         <label class="event-label">Time</label>
-        <input type="text" name="lineup_times[]" value="{{ $performer['time'] ?? '' }}" placeholder="e.g. 20:00" class="event-input">
+        <input type="text" name="lineup_times[]" value="{{ $performer['time'] ?? '' }}" maxlength="5" inputmode="numeric" pattern="(?:[01]\d|2[0-3]):[0-5]\d" placeholder="HH:MM (e.g. 20:00)" title="Time must be in valid HH:MM format (e.g. 20:00)" autocomplete="off" spellcheck="false" class="event-input" data-lineup-time>
       </div>
       <button type="button" onclick="this.closest('.lineup-row').remove()" class="event-icon-btn" aria-label="Remove performer">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M6 6l12 12M18 6L6 18"/></svg>
@@ -972,12 +1131,12 @@
   <div class="event-grid">
     <div class="event-field">
       <label class="event-label">Parking / Transport Info <span class="event-inline-note">(optional)</span></label>
-      <textarea name="parking_info" rows="3" class="event-textarea">{{ old('parking_info', $event->parking_info) }}</textarea>
+      <textarea name="parking_info" rows="3" maxlength="255" class="event-textarea">{{ old('parking_info', $event->parking_info) }}</textarea>
     </div>
 
     <div class="event-field">
       <label class="event-label">Refund Policy <span class="event-inline-note">(optional)</span></label>
-      <textarea name="refund_policy" rows="3" class="event-textarea">{{ old('refund_policy', $event->refund_policy) }}</textarea>
+      <textarea name="refund_policy" rows="3" maxlength="1000" class="event-textarea">{{ old('refund_policy', $event->refund_policy) }}</textarea>
     </div>
   </div>
 </section>
@@ -1016,17 +1175,40 @@
 
 @section('scripts')
 <script>
+const serverErrors = @json($errors->getMessages());
+let descriptionEditorInstance = null;
+
 ClassicEditor.create(document.querySelector('#description'), {
     toolbar: ['heading','|','bold','italic','link','bulletedList','numberedList','|','blockQuote','undo','redo'],
+}).then((editor) => {
+    descriptionEditorInstance = editor;
+    editor.model.document.on('change:data', () => {
+        validateMaxlengthField(document.querySelector('#description'));
+    });
 }).catch(console.error);
 
-function openDateTimePicker(trigger) {
-    const input = trigger.closest('.event-datetime-wrap')?.querySelector('.js-datetime-input');
+function openDateTimePicker(eventOrTrigger, maybeTrigger) {
+    const event = maybeTrigger ? eventOrTrigger : null;
+    const trigger = maybeTrigger || eventOrTrigger;
+
+    event?.preventDefault();
+    event?.stopPropagation();
+
+    const input = trigger?.closest('.event-datetime-wrap')?.querySelector('.js-datetime-input');
     if (!input) return;
     if (input._flatpickr) {
-        input._flatpickr.open();
+        requestAnimationFrame(() => {
+            input._flatpickr.altInput?.focus({ preventScroll: true });
+            input._flatpickr.open();
+        });
         return;
     }
+
+    if (typeof input.showPicker === 'function') {
+        input.showPicker();
+        return;
+    }
+
     input.focus({ preventScroll: true });
     input.click();
 }
@@ -1037,31 +1219,191 @@ function addLineupRow() {
     row.innerHTML = `
         <div class="event-field">
             <label class="event-label">Performer Name</label>
-            <input type="text" name="lineup_names[]" placeholder="Performer name" class="event-input">
+            <input type="text" name="lineup_names[]" maxlength="50" placeholder="Performer name" class="event-input">
         </div>
         <div class="event-field">
             <label class="event-label">Role / Band</label>
-            <input type="text" name="lineup_roles[]" placeholder="Role / DJ / Band" class="event-input">
+            <input type="text" name="lineup_roles[]" maxlength="50" placeholder="Role / DJ / Band" class="event-input">
         </div>
         <div class="event-field">
             <label class="event-label">Time</label>
-            <input type="text" name="lineup_times[]" placeholder="e.g. 20:00" class="event-input">
+            <input type="text" name="lineup_times[]" maxlength="5" inputmode="numeric" pattern="(?:[01]\d|2[0-3]):[0-5]\d" placeholder="HH:MM (e.g. 20:00)" title="Time must be in valid HH:MM format (e.g. 20:00)" autocomplete="off" spellcheck="false" class="event-input" data-lineup-time>
         </div>
         <button type="button" onclick="this.closest('.lineup-row').remove()" class="event-icon-btn" aria-label="Remove performer">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M6 6l12 12M18 6L6 18"/></svg>
         </button>
     `;
+    row.querySelectorAll('input[maxlength], textarea[maxlength]').forEach((field) => {
+        setupMaxlengthValidation(field);
+    });
+    setupLineupTimeField(row.querySelector('[data-lineup-time]'));
     document.getElementById('lineup-rows').appendChild(row);
 }
 
-const form = document.querySelector('.event-create-form');
-const submitBtn = document.getElementById('submitBtn');
+function parseLocalDateTime(value) {
+    if (!value || !value.includes('T')) return null;
+    const [datePart, timePart] = value.split('T');
+    if (!datePart || !timePart) return null;
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hour, minute] = timePart.split(':').map(Number);
+    if ([year, month, day, hour, minute].some(Number.isNaN)) return null;
+    return new Date(year, month - 1, day, hour, minute, 0, 0);
+}
 
-form.addEventListener('submit', function () {
-    submitBtn.disabled = true;
-    submitBtn.style.opacity = '0.6';
-    submitBtn.innerHTML = 'Processing...';
-});
+function formatLocalDateTime(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hour}:${minute}`;
+}
+
+function formatDateTimeDisplay(value) {
+    const date = parseLocalDateTime(value);
+    if (!date) return '';
+
+    const formattedDate = new Intl.DateTimeFormat('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    }).format(date);
+    const formattedTime = new Intl.DateTimeFormat('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+    }).format(date).replace(/\s+/g, '').toLowerCase();
+
+    return `${formattedDate} ${formattedTime}`;
+}
+
+function syncValidationTimes(force = false) {
+    const startsAtInput = document.querySelector('input[name="starts_at"]');
+    const endsAtInput = document.querySelector('input[name="ends_at"]');
+    const validationStartInput = document.querySelector('input[name="ticket_validation_starts_at"]');
+    const validationEndInput = document.querySelector('input[name="ticket_validation_ends_at"]');
+    if (!startsAtInput || !endsAtInput || !validationStartInput || !validationEndInput) return;
+
+    const startsAt = parseLocalDateTime(startsAtInput.value);
+    const endsAt = parseLocalDateTime(endsAtInput.value);
+
+    if (startsAt && (force || validationStartInput.dataset.autoManaged === 'true')) {
+        const validationStart = new Date(startsAt.getTime() - (2 * 60 * 60 * 1000));
+        const formattedValue = formatLocalDateTime(validationStart);
+        if (validationStartInput._flatpickr) {
+            validationStartInput._flatpickr.setDate(formattedValue, true, 'Y-m-d\\TH:i');
+        } else {
+            validationStartInput.value = formattedValue;
+            validationStartInput._syncDisplay?.();
+        }
+    }
+
+    if (endsAt && (force || validationEndInput.dataset.autoManaged === 'true')) {
+        const formattedValue = formatLocalDateTime(endsAt);
+        if (validationEndInput._flatpickr) {
+            validationEndInput._flatpickr.setDate(formattedValue, true, 'Y-m-d\\TH:i');
+        } else {
+            validationEndInput.value = formattedValue;
+            validationEndInput._syncDisplay?.();
+        }
+    }
+}
+
+const lineupTimePattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+const lineupTimeErrorMessage = 'Time must be in valid HH:MM format (e.g. 20:00)';
+
+function formatLineupTimeValue(value) {
+    const digits = value.replace(/\D/g, '').slice(0, 4);
+    if (digits.length <= 2) {
+        return digits;
+    }
+
+    return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+}
+
+function isLineupTimeControlKey(event) {
+    return [
+        'Backspace',
+        'Delete',
+        'Tab',
+        'ArrowLeft',
+        'ArrowRight',
+        'ArrowUp',
+        'ArrowDown',
+        'Home',
+        'End',
+    ].includes(event.key);
+}
+
+function handleLineupTimeKeydown(event) {
+    if (event.ctrlKey || event.metaKey || event.altKey || isLineupTimeControlKey(event)) {
+        return;
+    }
+
+    if (/^\d$/.test(event.key)) {
+        return;
+    }
+
+    if (event.key === ':') {
+        const field = event.currentTarget;
+        const digitsCount = field.value.replace(/\D/g, '').length;
+
+        if (!field.value.includes(':') && digitsCount >= 2) {
+            return;
+        }
+    }
+
+    event.preventDefault();
+}
+
+function validateLineupTimeField(field) {
+    if (!field) return true;
+
+    const value = field.value.trim();
+    if (value === '') {
+        field.setCustomValidity('');
+        const existingText = field.parentElement?.querySelector('.event-field-error')?.textContent || '';
+        if (existingText === lineupTimeErrorMessage) {
+            setFieldError(field, '');
+        }
+        return true;
+    }
+
+    const isValid = lineupTimePattern.test(value);
+    field.setCustomValidity(isValid ? '' : lineupTimeErrorMessage);
+    setFieldError(field, isValid ? '' : lineupTimeErrorMessage);
+
+    return isValid;
+}
+
+function handleLineupTimeInput(event) {
+    const field = event.currentTarget;
+    field.value = formatLineupTimeValue(field.value);
+    validateLineupTimeField(field);
+}
+
+function setupLineupTimeField(field) {
+    if (!field || field.dataset.timeFieldReady === 'true') {
+        return;
+    }
+
+    field.dataset.timeFieldReady = 'true';
+    field.value = formatLineupTimeValue(field.value);
+    field.addEventListener('keydown', handleLineupTimeKeydown);
+    field.addEventListener('input', handleLineupTimeInput);
+    field.addEventListener('blur', () => validateLineupTimeField(field));
+    field.addEventListener('change', () => validateLineupTimeField(field));
+    field.addEventListener('paste', () => {
+        requestAnimationFrame(() => {
+            field.value = formatLineupTimeValue(field.value);
+            validateLineupTimeField(field);
+        });
+    });
+}
+
+const form = document.getElementById('event-form');
+const submitBtn = document.getElementById('submitBtn');
 
 window.addEventListener('load', function () {
     if (submitBtn) {
@@ -1071,27 +1413,227 @@ window.addEventListener('load', function () {
     }
 });
 
+function setupNativeDateTimeFallback(input) {
+    const wrap = input.closest('.event-datetime-wrap');
+    input.type = 'datetime-local';
+    input.removeAttribute('step');
+    input.classList.add('event-input--native-datetime');
+    wrap?.classList.add('event-datetime-wrap--native');
+
+    let displayInput = wrap?.querySelector('.js-datetime-display');
+    if (!displayInput && wrap) {
+        displayInput = document.createElement('input');
+        displayInput.type = 'text';
+        displayInput.readOnly = true;
+        displayInput.className = 'event-input event-input--datetime-display js-datetime-display';
+        displayInput.placeholder = 'Select date and time';
+        input.insertAdjacentElement('beforebegin', displayInput);
+    }
+    if (displayInput && !displayInput.placeholder) {
+        displayInput.placeholder = 'Select date and time';
+    }
+
+    const syncDisplay = () => {
+        if (!displayInput) return;
+        displayInput.value = formatDateTimeDisplay(input.value);
+    };
+
+    input._syncDisplay = syncDisplay;
+    syncDisplay();
+    input.addEventListener('change', syncDisplay);
+    input.addEventListener('input', syncDisplay);
+
+    displayInput?.addEventListener('click', () => openDateTimePicker(displayInput));
+    displayInput?.addEventListener('focus', () => openDateTimePicker(displayInput));
+}
+
 document.querySelectorAll('.js-datetime-input').forEach((input) => {
-    flatpickr(input, {
-        enableTime: true,
-        time_24hr: false,
-        dateFormat: 'Y-m-d\\TH:i',
-        altInput: true,
-        altFormat: 'd-m-Y h:i K',
-        altInputClass: 'event-input event-input--datetime',
-        minuteIncrement: 5,
-        allowInput: true,
-        disableMobile: true,
-        monthSelectorType: 'dropdown',
-        nextArrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 6 6 6-6 6"/></svg>',
-        prevArrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m15 18-6-6 6-6"/></svg>',
-        onReady: function (_, __, instance) {
-            if (instance.altInput) {
-                instance.altInput.placeholder = '30-12-2026 12:45 AM';
-                instance.altInput.autocomplete = 'off';
-            }
-        },
+    setupNativeDateTimeFallback(input);
+});
+
+document.querySelectorAll('.js-banner-input').forEach((input) => {
+    input.addEventListener('change', function () {
+        const fileNameEl = this.closest('.event-upload')?.querySelector('.js-banner-file-name');
+        if (!fileNameEl) return;
+        fileNameEl.textContent = this.files && this.files[0] ? this.files[0].name : 'No file selected';
     });
 });
+
+document.querySelectorAll('[data-lineup-time]').forEach((field) => {
+    setupLineupTimeField(field);
+});
+
+function getFieldByErrorKey(fieldKey) {
+    const directField = document.querySelector(`[name="${fieldKey}"]`);
+    if (directField) return directField;
+
+    const indexedMatch = fieldKey.match(/^([a-zA-Z0-9_]+)\.(\d+)$/);
+    if (!indexedMatch) return null;
+
+    const [, baseName, index] = indexedMatch;
+    const fields = document.querySelectorAll(`[name="${baseName}[]"]`);
+    return fields[Number(index)] || null;
+}
+
+function ensureFieldErrorElement(field) {
+    if (!field) return null;
+    const existing = field.parentElement?.querySelector('.event-field-error');
+    if (existing) return existing;
+
+    const errorEl = document.createElement('p');
+    errorEl.className = 'event-field-error';
+    const editor = field.name === 'description' ? field.parentElement?.querySelector('.ck-editor') : null;
+    if (editor) {
+        editor.insertAdjacentElement('afterend', errorEl);
+    } else {
+        field.insertAdjacentElement('afterend', errorEl);
+    }
+    return errorEl;
+}
+
+function setFieldError(field, message) {
+    const errorEl = ensureFieldErrorElement(field);
+    if (!errorEl) return;
+    const highlightTarget = field.name === 'description'
+        ? field.parentElement?.querySelector('.ck-editor__editable') || field
+        : field;
+
+    if (message) {
+        errorEl.textContent = message;
+        errorEl.classList.add('is-visible');
+        highlightTarget.classList.add('border-red-500');
+    } else {
+        errorEl.textContent = '';
+        errorEl.classList.remove('is-visible');
+        highlightTarget.classList.remove('border-red-500');
+    }
+}
+
+function getPlainEditorText() {
+    if (!descriptionEditorInstance) return '';
+    return descriptionEditorInstance.getData().replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+}
+
+function validateMaxlengthField(field) {
+    if (field.matches('[data-lineup-time]')) {
+        return validateLineupTimeField(field);
+    }
+
+    const maxLength = Number(field.getAttribute('maxlength'));
+    if (!maxLength) return true;
+
+    const isDescription = field.name === 'description';
+    const valueLength = isDescription ? getPlainEditorText().length : field.value.length;
+    if (valueLength > maxLength) {
+        setFieldError(field, `Maximum ${maxLength} characters allowed.`);
+        return false;
+    }
+
+    const fieldLabel = (field.closest('.event-field')?.querySelector('.event-label')?.textContent || field.name || 'This field')
+        .replace(/\*/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    if (valueLength === maxLength) {
+        setFieldError(field, `${fieldLabel} maximum limit reached.`);
+        return true;
+    }
+
+    if (valueLength > maxLength) {
+        setFieldError(field, `${fieldLabel} maximum limit reached.`);
+        return false;
+    }
+
+    const existingText = field.parentElement?.querySelector('.event-field-error')?.textContent || '';
+    if (existingText === `${fieldLabel} maximum limit reached.`) {
+        setFieldError(field, '');
+    }
+    return true;
+}
+
+function setupMaxlengthValidation(field) {
+    if (!field || field.dataset.maxlengthValidationReady === 'true') {
+        return;
+    }
+
+    field.dataset.maxlengthValidationReady = 'true';
+    field.addEventListener('input', () => validateMaxlengthField(field));
+    field.addEventListener('blur', () => validateMaxlengthField(field));
+}
+
+document.querySelectorAll('#event-form input[maxlength], #event-form textarea[maxlength]').forEach((field) => {
+    setupMaxlengthValidation(field);
+});
+
+Object.entries(serverErrors).forEach(([fieldKey, messages]) => {
+    const field = getFieldByErrorKey(fieldKey);
+    if (!field || !messages.length) return;
+    setFieldError(field, messages[0]);
+});
+
+form.addEventListener('submit', function (event) {
+    const fields = this.querySelectorAll('input[maxlength], textarea[maxlength]');
+    const lineupTimeFields = this.querySelectorAll('[data-lineup-time]');
+    let hasValidationError = false;
+
+    fields.forEach((field) => {
+        if (!validateMaxlengthField(field)) {
+            hasValidationError = true;
+        }
+    });
+
+    lineupTimeFields.forEach((field) => {
+        if (!validateLineupTimeField(field)) {
+            hasValidationError = true;
+        }
+    });
+
+    if (hasValidationError) {
+        event.preventDefault();
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.innerHTML = 'Update Event';
+        return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.6';
+    submitBtn.innerHTML = 'Processing...';
+});
+
+const startsAtInput = document.querySelector('input[name="starts_at"]');
+const endsAtInput = document.querySelector('input[name="ends_at"]');
+const validationStartInput = document.querySelector('input[name="ticket_validation_starts_at"]');
+const validationEndInput = document.querySelector('input[name="ticket_validation_ends_at"]');
+
+if (startsAtInput && endsAtInput && validationStartInput && validationEndInput) {
+    const startsAt = parseLocalDateTime(startsAtInput.value);
+    const endsAt = parseLocalDateTime(endsAtInput.value);
+    const defaultStartValue = startsAt ? formatLocalDateTime(new Date(startsAt.getTime() - (2 * 60 * 60 * 1000))) : '';
+    const defaultEndValue = endsAt ? formatLocalDateTime(endsAt) : '';
+
+    validationStartInput.dataset.autoManaged = (!validationStartInput.value || validationStartInput.value === defaultStartValue) ? 'true' : 'false';
+    validationEndInput.dataset.autoManaged = (!validationEndInput.value || validationEndInput.value === defaultEndValue) ? 'true' : 'false';
+
+    syncValidationTimes();
+
+    startsAtInput.addEventListener('change', () => syncValidationTimes());
+    startsAtInput.addEventListener('input', () => syncValidationTimes());
+    endsAtInput.addEventListener('change', () => syncValidationTimes());
+    endsAtInput.addEventListener('input', () => syncValidationTimes());
+
+    validationStartInput.addEventListener('change', () => {
+        validationStartInput.dataset.autoManaged = 'false';
+    });
+    validationStartInput.addEventListener('input', () => {
+        validationStartInput.dataset.autoManaged = 'false';
+    });
+    validationEndInput.addEventListener('change', () => {
+        validationEndInput.dataset.autoManaged = 'false';
+    });
+    validationEndInput.addEventListener('input', () => {
+        validationEndInput.dataset.autoManaged = 'false';
+    });
+}
 </script>
 @endsection

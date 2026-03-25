@@ -29,8 +29,8 @@
 
       <div class="meta">
         <p><strong>Event:</strong> {{ $booking->event->title }}</p>
-        <p><strong>Date:</strong> {{ $booking->event->starts_at->format('l, d F Y') }}</p>
-        <p><strong>Time:</strong> {{ $booking->event->starts_at->format('g:ia') }}</p>
+        <p><strong>Date:</strong> {{ ticketly_format_date($booking->event->starts_at) }}</p>
+        <p><strong>Time:</strong> {{ ticketly_format_time($booking->event->starts_at) }}</p>
         <p><strong>Venue:</strong> {{ $booking->event->venue_name }}, {{ $booking->event->city }}</p>
       </div>
 
