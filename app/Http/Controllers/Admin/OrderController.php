@@ -71,7 +71,7 @@ class OrderController extends Controller
 
     public function show(int $id)
     {
-        $booking = Booking::with(['event.organiser', 'items.ticketTier', 'promoCode', 'customer'])
+        $booking = Booking::with(['event.organiser', 'items.ticketTier', 'promoCode', 'customer', 'refundTransactions'])
             ->findOrFail($id);
 
         return view('admin.orders.show', compact('booking'));
@@ -127,8 +127,6 @@ class OrderController extends Controller
 
         $refundSubtotal = round(((float) $item->unit_price) * $refundQty, 2);
         $newSubtotal = max(0.0, round(((float) $booking->subtotal) - $refundSubtotal, 2));
-        $basePricing = ServiceFeeCalculator::total($newSubtotal);
-
         $discount = 0.0;
         if ($booking->promoCode) {
             $discount = $booking->promoCode->calculateDiscount($newSubtotal);

@@ -35,7 +35,7 @@ class OrganiserProfilePasswordTest extends TestCase
         $this->assertSame(302, $response->getStatusCode());
         $this->assertTrue($session->has('errors'));
         $this->assertSame(
-            'You cannot use a previously used password. please Try with another password.',
+            'You cannot use a previously used password. Please Try with another password.',
             $session->get('errors')->getBag('default')->first('password')
         );
     }

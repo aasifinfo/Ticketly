@@ -1,14 +1,6 @@
 @php
-  $qrPayload = route('events.show', [
-      'slug' => $booking->event->slug,
-      'ticket_uuid' => $booking->ticket_uuid,
-      'booking_reference' => $booking->reference,
-  ]);
   $portalFeePercentage = ticketly_format_percentage(ticketly_setting('portal_fee_percentage', config('ticketly.portal_fee_percentage', 10)));
   $serviceFeePercentage = ticketly_format_percentage(ticketly_setting('service_fee_percentage', config('ticketly.service_fee_percentage', 5)));
-  $qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' . urlencode($qrPayload);
-  $qrBinary = @file_get_contents($qrApiUrl);
-  $qrDataUri = $qrBinary ? 'data:image/png;base64,' . base64_encode($qrBinary) : null;
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -355,7 +347,7 @@
 
     <div class="qr-wrap">
         <img class="qr-img"
-             src="{{ $qrDataUri ?: $qrApiUrl }}"
+             src="{{ $qrImageSrc }}"
              alt="QR code for booking reference {{ $booking->reference }}">
         <div class="qr-label">Scan at Entry Gate</div>
       </div>

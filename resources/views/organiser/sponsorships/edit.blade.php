@@ -9,7 +9,7 @@
     @include('organiser.sponsorships._alerts')
 
     <div>
-        <a href="{{ route('organiser.sponsorships.index', $event->id) }}" class="text-sm text-gray-400 transition-colors hover:text-white">&larr; Back to Sponsorships</a>
+        <a href="{{ url('/organiser/events') }}" class="text-sm text-gray-400 transition-colors hover:text-white">&larr; Back to Events</a>
     </div>
 
     <div class="rounded-2xl border border-gray-800 bg-gray-900 p-5 sm:p-8">

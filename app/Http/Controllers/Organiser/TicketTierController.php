@@ -97,14 +97,14 @@ class TicketTierController extends Controller
             'price'          => 'required|numeric|min:0',
             'total_quantity' => 'required|integer|min:1|max:100000',
             'min_per_order'  => 'required|integer|min:1',
-            'max_per_order'  => 'required|integer|min:10',
+            'max_per_order'  => 'required|integer|min:20',
             'is_active'      => 'boolean',
             'sort_order'     => 'integer|min:0',
         ], [
             'min_per_order.required' => 'Minimum per order is required.',
             'min_per_order.min' => 'Minimum per order must be at least 1.',
             'max_per_order.required' => 'Max per order is required.',
-            'max_per_order.min' => 'Max per order must be at least 10.',
+            'max_per_order.min' => 'Max per order must be at least 20.',
         ]);
 
         if (!(bool) ticketly_setting('allow_free_events', true) && (float) $validated['price'] <= 0) {

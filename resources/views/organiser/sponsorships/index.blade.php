@@ -9,7 +9,7 @@
     @include('organiser.sponsorships._alerts')
 
     <div class="flex flex-wrap items-center justify-between gap-3">
-        <a href="{{ route('organiser.events.edit', $event->id) }}" class="group inline-flex items-center gap-2 text-sm font-semibold text-gray-400 transition-colors hover:text-white">
+        <a href="{{ url('/organiser/events') }}" class="group inline-flex items-center gap-2 text-sm font-semibold text-gray-400 transition-colors hover:text-white">
             <span class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-700 bg-transparent text-gray-400 transition-colors group-hover:border-gray-500">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 6 9 12l6 6"></path>

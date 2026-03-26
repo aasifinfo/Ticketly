@@ -4,6 +4,18 @@
 @section('page-title', 'Event')
 @section('page-subtitle', $event->title)
 
+@section('head')
+<style>
+  .admin-event-sponsor-initials {
+    color: #d1d5db !important;
+  }
+
+  .admin-event-sponsor-name {
+    color: #ffffff !important;
+  }
+</style>
+@endsection
+
 @section('content')
 <div class="grid gap-6">
   <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -269,11 +281,11 @@
               @if($sponsorship->photo_url)
                 <img src="{{ $sponsorship->photo_url }}" alt="{{ $sponsorship->name }}" class="h-full w-full object-cover">
               @else
-                <span class="text-lg font-extrabold tracking-[0.2em] text-gray-300">{{ $initials }}</span>
+                <span class="admin-event-sponsor-initials text-lg font-extrabold tracking-[0.2em] text-gray-300">{{ $initials }}</span>
               @endif
             </div>
             @if($sponsorship->name)
-              <p class="mt-3 truncate text-center text-sm font-semibold text-white">{{ $sponsorship->name }}</p>
+              <p class="admin-event-sponsor-name mt-3 truncate text-center text-sm font-semibold text-white">{{ $sponsorship->name }}</p>
             @endif
           </div>
         @endforeach

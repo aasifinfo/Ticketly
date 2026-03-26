@@ -464,7 +464,18 @@
   }
 
   .event-create-page .ck.ck-editor {
+    width: 100% !important;
+    min-width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .event-create-page .ck.ck-editor__main {
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .event-create-page .ck.ck-toolbar {
@@ -479,7 +490,18 @@
   }
 
   .event-create-page .ck.ck-editor__main > .ck-editor__editable {
-    min-height: 11rem;
+    min-height: 11rem !important;
+    height: 11rem !important;
+    max-height: 11rem !important;
+    width: 100% !important;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    resize: none;
+    box-sizing: border-box;
     border: 1px solid var(--event-input-border);
     border-radius: 0 0 0.75rem 0.75rem;
     background: var(--event-input-bg);
@@ -490,6 +512,37 @@
   .event-create-page .ck.ck-editor__main > .ck-editor__editable:focus {
     border-color: rgba(124, 58, 237, 0.45);
     box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+  }
+
+  .event-create-page .ck.ck-editor__main > .ck-editor__editable p,
+  .event-create-page .ck.ck-editor__main > .ck-editor__editable li,
+  .event-create-page .ck.ck-editor__main > .ck-editor__editable blockquote {
+    color: inherit;
+  }
+
+  .event-create-page .ck.ck-editor__main > .ck-editor__editable h1,
+  .event-create-page .ck.ck-editor__main > .ck-editor__editable h2,
+  .event-create-page .ck.ck-editor__main > .ck-editor__editable h3 {
+    color: var(--event-heading);
+    margin: 0.8rem 0 0.45rem;
+  }
+
+  .event-create-page .ck.ck-editor__main > .ck-editor__editable h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1.25;
+  }
+
+  .event-create-page .ck.ck-editor__main > .ck-editor__editable h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .event-create-page .ck.ck-editor__main > .ck-editor__editable h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.35;
   }
 
   :root[data-theme='dark'] .event-create-page .ck.ck-toolbar .ck-button,
@@ -529,6 +582,65 @@
     color: #f8fafc !important;
     fill: currentColor !important;
     stroke: currentColor !important;
+  }
+
+  :root[data-theme='dark'] .event-create-page .ck.ck-editor__main > .ck-editor__editable,
+  :root[data-theme='dark'] .event-create-page .ck.ck-editor__main > .ck-editor__editable p,
+  :root[data-theme='dark'] .event-create-page .ck.ck-editor__main > .ck-editor__editable li,
+  :root[data-theme='dark'] .event-create-page .ck.ck-editor__main > .ck-editor__editable blockquote {
+    color: #e2e8f0 !important;
+  }
+
+  :root[data-theme='dark'] .event-create-page .ck.ck-editor__main > .ck-editor__editable h1,
+  :root[data-theme='dark'] .event-create-page .ck.ck-editor__main > .ck-editor__editable h2,
+  :root[data-theme='dark'] .event-create-page .ck.ck-editor__main > .ck-editor__editable h3 {
+    color: #f8fafc !important;
+  }
+
+  :root[data-theme='dark'] .event-create-page .ck.ck-dropdown__panel {
+    background: #0f172a !important;
+    border: 1px solid #334155 !important;
+    box-shadow: 0 18px 45px rgba(2, 6, 23, 0.38) !important;
+  }
+
+  :root[data-theme='dark'] .event-create-page .ck.ck-dropdown__panel .ck-list,
+  :root[data-theme='dark'] .event-create-page .ck.ck-dropdown__panel .ck-list__item,
+  :root[data-theme='dark'] .event-create-page .ck.ck-dropdown__panel .ck-list__item .ck-button,
+  :root[data-theme='dark'] .event-create-page .ck.ck-dropdown__panel .ck-list__item .ck-button .ck-button__label {
+    background: transparent !important;
+    color: #e2e8f0 !important;
+  }
+
+  :root[data-theme='dark'] .event-create-page .ck.ck-dropdown__panel .ck-icon,
+  :root[data-theme='dark'] .event-create-page .ck.ck-dropdown__panel .ck-icon * {
+    color: #e2e8f0 !important;
+    fill: currentColor !important;
+    stroke: currentColor !important;
+  }
+
+  :root[data-theme='dark'] .event-create-page .ck.ck-dropdown__panel .ck-list__item .ck-button:hover:not(.ck-disabled),
+  :root[data-theme='dark'] .event-create-page .ck.ck-dropdown__panel .ck-list__item .ck-button:focus:not(.ck-disabled),
+  :root[data-theme='dark'] .event-create-page .ck.ck-dropdown__panel .ck-list__item .ck-button.ck-on {
+    background: rgba(139, 92, 246, 0.18) !important;
+    color: #f8fafc !important;
+  }
+
+  :root[data-theme='dark'] .event-create-page .ck.ck-heading-dropdown .ck-list__item .ck-button_heading1 .ck-button__label {
+    color: #f8fafc !important;
+    font-size: 1.05rem !important;
+    font-weight: 800 !important;
+  }
+
+  :root[data-theme='dark'] .event-create-page .ck.ck-heading-dropdown .ck-list__item .ck-button_heading2 .ck-button__label {
+    color: #f8fafc !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+  }
+
+  :root[data-theme='dark'] .event-create-page .ck.ck-heading-dropdown .ck-list__item .ck-button_heading3 .ck-button__label {
+    color: #f8fafc !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
   }
 
   @media (max-width: 767px) {
@@ -932,16 +1044,134 @@
 @section('scripts')
 <script>
 const serverErrors = @json($errors->getMessages());
+const descriptionField = document.querySelector('#description');
+const descriptionMaxLength = Number(descriptionField?.getAttribute('maxlength')) || 0;
 let descriptionEditorInstance = null;
+let lastValidDescriptionData = descriptionField?.value || '';
+let isApplyingDescriptionLimit = false;
 
-ClassicEditor.create(document.querySelector('#description'), {
+ClassicEditor.create(descriptionField, {
     toolbar: ['heading','|','bold','italic','link','bulletedList','numberedList','|','blockQuote','undo','redo'],
 }).then((editor) => {
     descriptionEditorInstance = editor;
+    lastValidDescriptionData = editor.getData();
     editor.model.document.on('change:data', () => {
-        validateMaxlengthField(document.querySelector('#description'));
+        if (!isApplyingDescriptionLimit) {
+            enforceDescriptionMaxlength(descriptionField);
+        }
+        validateMaxlengthField(descriptionField);
     });
 }).catch(console.error);
+
+function getEditorTextFromHtml(html) {
+    const container = document.createElement('div');
+    container.innerHTML = html || '';
+    return (container.textContent || container.innerText || '').replace(/\u00a0/g, ' ');
+}
+
+function truncateEditorHtml(html, maxLength) {
+    const source = document.createElement('div');
+    const target = document.createElement('div');
+    let remaining = maxLength;
+
+    source.innerHTML = html || '';
+
+    function appendTruncatedNode(node, parent) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent || '';
+            if (!text || remaining <= 0) {
+                return false;
+            }
+
+            const chunk = text.slice(0, remaining);
+            if (!chunk) {
+                return false;
+            }
+
+            remaining -= chunk.length;
+            parent.appendChild(document.createTextNode(chunk));
+            return true;
+        }
+
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+            return false;
+        }
+
+        if (node.tagName === 'BR') {
+            if (!parent.childNodes.length) {
+                return false;
+            }
+            parent.appendChild(node.cloneNode(false));
+            return true;
+        }
+
+        const clone = node.cloneNode(false);
+        let hasContent = false;
+
+        Array.from(node.childNodes).forEach((child) => {
+            if (remaining <= 0) {
+                return;
+            }
+
+            if (appendTruncatedNode(child, clone)) {
+                hasContent = true;
+            }
+        });
+
+        if (!hasContent) {
+            return false;
+        }
+
+        parent.appendChild(clone);
+        return true;
+    }
+
+    Array.from(source.childNodes).forEach((child) => {
+        if (remaining <= 0) {
+            return;
+        }
+
+        appendTruncatedNode(child, target);
+    });
+
+    return target.innerHTML;
+}
+
+function moveDescriptionCursorToEnd() {
+    if (!descriptionEditorInstance) return;
+
+    descriptionEditorInstance.editing.view.focus();
+    descriptionEditorInstance.model.change((writer) => {
+        writer.setSelection(descriptionEditorInstance.model.document.getRoot(), 'end');
+    });
+}
+
+function enforceDescriptionMaxlength(field) {
+    if (!field || !descriptionEditorInstance || !descriptionMaxLength) {
+        return true;
+    }
+
+    const currentData = descriptionEditorInstance.getData();
+    if (getEditorTextFromHtml(currentData).length <= descriptionMaxLength) {
+        lastValidDescriptionData = currentData;
+        return true;
+    }
+
+    const truncatedData = truncateEditorHtml(currentData, descriptionMaxLength) || lastValidDescriptionData;
+
+    isApplyingDescriptionLimit = true;
+    descriptionEditorInstance.setData(truncatedData);
+    lastValidDescriptionData = truncatedData;
+
+    requestAnimationFrame(() => {
+        moveDescriptionCursorToEnd();
+        isApplyingDescriptionLimit = false;
+        validateMaxlengthField(field);
+    });
+
+    setFieldError(field, `Maximum ${descriptionMaxLength} characters allowed.`);
+    return false;
+}
 
 function openDateTimePicker(eventOrTrigger, maybeTrigger) {
     const event = maybeTrigger ? eventOrTrigger : null;
@@ -1255,8 +1485,8 @@ function setFieldError(field, message) {
 }
 
 function getPlainEditorText() {
-    if (!descriptionEditorInstance) return '';
-    return descriptionEditorInstance.getData().replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+    if (!descriptionEditorInstance) return descriptionField?.value || '';
+    return getEditorTextFromHtml(descriptionEditorInstance.getData());
 }
 
 function validateMaxlengthField(field) {
@@ -1290,7 +1520,7 @@ function validateMaxlengthField(field) {
     }
 
     const existingText = field.parentElement?.querySelector('.event-field-error')?.textContent || '';
-    if (existingText === `${fieldLabel} maximum limit reached.`) {
+    if (existingText === `${fieldLabel} maximum limit reached.` || existingText === `Maximum ${maxLength} characters allowed.`) {
         setFieldError(field, '');
     }
     return true;

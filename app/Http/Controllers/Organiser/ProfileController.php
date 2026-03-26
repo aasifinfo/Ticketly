@@ -78,7 +78,7 @@ class ProfileController extends Controller
         }
 
         if (Hash::check($validated['password'], $organiser->password)) {
-            return back()->withErrors(['password' => 'You cannot use a previously used password. please Try with another password.']);
+            return back()->withErrors(['password' => 'You cannot use a previously used password. Please Try with another password.']);
         }
 
         $organiser->update(['password' => Hash::make($validated['password'])]);

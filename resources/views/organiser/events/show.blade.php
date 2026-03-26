@@ -7,6 +7,7 @@
 @php
   $sameDayEvent = $event->starts_at->isSameDay($event->ends_at);
   $canPreview = $event->status === 'published' && $event->approval_status === 'approved';
+  $showRejectedPublishState = !$event->isCancelled() && $event->approval_status === 'rejected';
 @endphp
 <div class="max-w-5xl space-y-6">
   <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -22,14 +23,20 @@
       @if($canPreview)
       <a href="{{ route('events.show', $event->slug) }}" target="_blank" class="text-xs font-semibold text-gray-400 border border-gray-700 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors">Preview ↗</a>
       @endif
-      @if(!$event->isCancelled() && $event->status !== 'published')
+      @if($showRejectedPublishState)
+      <form action="{{ route('organiser.events.status', $event->id) }}" method="POST" class="w-full sm:w-auto">
+        @csrf
+        <input type="hidden" name="status" value="published">
+        <button type="submit" disabled aria-disabled="true" class="w-full text-xs font-semibold text-red-400 border border-red-700/50 px-3 py-2 rounded-lg hover:bg-red-900/20 transition-colors sm:w-auto">Rejected</button>
+      </form>
+      @elseif(!$event->isCancelled() && $event->status !== 'published')
       <form action="{{ route('organiser.events.status', $event->id) }}" method="POST" class="w-full sm:w-auto">
         @csrf
         <input type="hidden" name="status" value="published">
         <button type="submit" class="w-full text-xs font-semibold text-emerald-400 border border-emerald-700/50 px-3 py-2 rounded-lg hover:bg-emerald-900/20 transition-colors sm:w-auto">Publish</button>
       </form>
       @endif
-@if(!$event->isCancelled() && $event->status === 'published')
+@if(!$event->isCancelled() && $event->status === 'published' && $event->approval_status !== 'rejected')
       <form action="{{ route('organiser.events.status', $event->id) }}" method="POST" class="w-full sm:w-auto">
         @csrf
         <input type="hidden" name="status" value="draft">
@@ -43,12 +50,12 @@
       
       
       @if(!$event->isCancelled())
-      <button type="button" onclick="document.getElementById('cancel-modal').classList.remove('hidden')" class="w-full text-xs font-semibold text-red-400 border border-red-700/50 px-3 py-2 rounded-lg hover:bg-red-900/20 transition-colors sm:w-auto">Cancel</button>
+      <button type="button" onclick="document.getElementById('cancel-modal').classList.remove('hidden')" class="w-full text-xs font-semibold text-red-400 border border-red-700/50 px-3 py-2 rounded-lg hover:bg-red-900/20 transition-colors sm:w-auto">Cancel Event</button>
       @endif
       <form action="{{ route('organiser.events.destroy', $event->id) }}" method="POST" class="w-full sm:w-auto" data-confirm="Delete this event?">
         @csrf
         @method('DELETE')
-        <button type="submit" class="w-full text-xs font-semibold text-red-400 border border-red-700/50 px-3 py-2 rounded-lg hover:bg-red-900/20 transition-colors sm:w-auto">Delete</button>
+        <button type="submit" class="w-full text-xs font-semibold text-red-400 border border-red-700/50 px-3 py-2 rounded-lg hover:bg-red-900/20 transition-colors sm:w-auto">Delete Event</button>
       </form>
       
     </div>

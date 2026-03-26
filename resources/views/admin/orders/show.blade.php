@@ -3,8 +3,27 @@
 @section('title', 'Order Details')
 @section('page-title', 'Order')
 @section('page-subtitle', $booking->reference)
+@section('head')
+<style>
+  :root[data-theme='light'] .admin-refund-history-card,
+  :root[data-theme='light'] .admin-refund-history-entry {
+    background: #ffffff !important;
+    border-color: var(--surface-border) !important;
+    box-shadow: var(--light-shadow-sm);
+  }
+
+  :root[data-theme='light'] .admin-refund-history-card,
+  :root[data-theme='light'] .admin-refund-history-card * {
+    color: #0f172a !important;
+  }
+</style>
+@endsection
 
 @section('content')
+@php
+  $portalFeePercentage = ticketly_format_percentage(ticketly_setting('portal_fee_percentage', config('ticketly.portal_fee_percentage', 10)));
+  $serviceFeePercentage = ticketly_format_percentage(ticketly_setting('service_fee_percentage', config('ticketly.service_fee_percentage', 5)));
+@endphp
 <div class="grid gap-6">
   <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -58,12 +77,30 @@
   </div>
 
   @php
-    $refundTotal = (float) ($booking->refund_amount ?? 0);
-    $hasRefund = $refundTotal > 0 || $booking->refunded_at || $booking->refund_reason;
-    $originalTotal = $booking->isPartiallyRefunded()
-      ? ($refundTotal + (float) $booking->total)
-      : (float) $booking->total;
-    $remainingTotal = max($originalTotal - $refundTotal, 0);
+    $refundTotal = round((float) ($booking->refund_amount ?? 0), 2);
+    $refundTransactions = $booking->refundTransactions;
+    if ($refundTransactions->isEmpty() && ($refundTotal > 0 || $booking->refunded_at || $booking->refund_reason)) {
+      $fallbackOriginalTotal = $booking->isPartiallyRefunded()
+        ? round($refundTotal + (float) $booking->total, 2)
+        : max(round((float) $booking->total, 2), $refundTotal);
+      $fallbackRemainingTotal = $booking->isFullyRefunded()
+        ? 0.0
+        : max(round($fallbackOriginalTotal - $refundTotal, 2), 0.0);
+
+      $refundTransactions = collect([
+        (object) [
+          'original_total' => $fallbackOriginalTotal,
+          'refunded_amount' => $refundTotal,
+          'remaining_total' => $fallbackRemainingTotal,
+          'refunded_at' => $booking->refunded_at,
+          'reason' => $booking->refund_reason,
+        ],
+      ]);
+    }
+    $hasRefund = $refundTransactions->isNotEmpty();
+    $remainingTotal = $hasRefund
+      ? max((float) $refundTransactions->first()->remaining_total, 0)
+      : max((float) $booking->total, 0);
     $refundStatus = $booking->isFullyRefunded()
       ? 'Full refund'
       : ($booking->isPartiallyRefunded() ? 'Partial refund' : ucfirst($booking->status));
@@ -77,11 +114,11 @@
           <span>{{ ticketly_money($booking->subtotal ?? 0) }}</span>
         </div>
         <div class="flex items-center justify-between text-gray-300">
-          <span>Portal Fee</span>
+          <span>Portal Fee ({{ $portalFeePercentage }}%)</span>
           <span>{{ ticketly_money($booking->portal_fee ?? 0) }}</span>
         </div>
         <div class="flex items-center justify-between text-gray-300">
-          <span>Service Fee </span>
+          <span>Service Fee ({{ $serviceFeePercentage }}%)</span>
           <span>{{ ticketly_money($booking->service_fee ?? 0) }}</span>
         </div>
         @if(($booking->discount_amount ?? 0) > 0)
@@ -97,7 +134,7 @@
       </div>
     </div>
 
-    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+    <div class="admin-refund-history-card bg-gray-900 border border-gray-800 rounded-2xl p-5">
       <h2 class="text-sm font-semibold text-white mb-4">Refund History</h2>
       @if($hasRefund)
         <div class="space-y-2 text-sm">
@@ -106,31 +143,44 @@
             <span>{{ $refundStatus }}</span>
           </div>
           <div class="flex items-center justify-between text-gray-300">
-            <span>Original Total</span>
-            <span>{{ ticketly_money($originalTotal) }}</span>
-          </div>
-          <div class="flex items-center justify-between text-gray-300">
             <span>Total Refunded</span>
             <span>{{ ticketly_money($refundTotal) }}</span>
           </div>
-          @if($refundTotal > 0)
           <div class="flex items-center justify-between text-gray-300">
-            <span>Remaining</span>
+            <span>Current Remaining</span>
             <span>{{ ticketly_money($remainingTotal) }}</span>
           </div>
-          @endif
-          @if($booking->refunded_at)
-          <div class="flex items-center justify-between text-gray-300">
-            <span>Refunded At</span>
-            <span>{{ ticketly_format_datetime($booking->refunded_at) }}</span>
+        </div>
+
+        <div class="mt-4 space-y-3">
+          @foreach($refundTransactions as $refund)
+          <div class="admin-refund-history-entry rounded-xl border border-gray-800 bg-gray-950/60 p-4">
+            <div class="flex items-center justify-between gap-3 text-xs uppercase tracking-wide text-gray-500">
+              <span>Refund {{ $loop->iteration }}</span>
+              <span>{{ $refund->refunded_at ? ticketly_format_datetime($refund->refunded_at) : 'Timestamp unavailable' }}</span>
+            </div>
+            <div class="mt-3 space-y-2 text-sm">
+              <div class="flex items-center justify-between text-gray-300">
+                <span>Original Total</span>
+                <span>{{ ticketly_money($refund->original_total) }}</span>
+              </div>
+              <div class="flex items-center justify-between text-gray-300">
+                <span>Refunded Amount</span>
+                <span>{{ ticketly_money($refund->refunded_amount) }}</span>
+              </div>
+              <div class="flex items-center justify-between text-gray-300">
+                <span>Remaining Amount</span>
+                <span>{{ ticketly_money($refund->remaining_total) }}</span>
+              </div>
+            </div>
+            @if($refund->reason)
+            <div class="pt-3 text-xs text-gray-400">
+              <span class="block uppercase mb-1 text-[11px] tracking-wide">Reason</span>
+              <span class="text-gray-300">{{ $refund->reason }}</span>
+            </div>
+            @endif
           </div>
-          @endif
-          @if($booking->refund_reason)
-          <div class="text-xs text-gray-400 pt-2">
-            <span class="block uppercase mb-1 text-[11px] tracking-wide">Reason</span>
-            <span class="text-gray-300">{{ $booking->refund_reason }}</span>
-          </div>
-          @endif
+          @endforeach
         </div>
       @else
         <p class="text-sm text-gray-400">No refunds recorded for this order.</p>

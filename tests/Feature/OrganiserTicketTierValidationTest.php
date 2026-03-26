@@ -56,7 +56,7 @@ class OrganiserTicketTierValidationTest extends TestCase
         $createResponse->assertRedirect(route('organiser.tiers.create', $event->id));
         $createResponse->assertSessionHasErrors(['max_per_order']);
         $createResponse->assertSessionHas('errors', function ($errors) {
-            return $errors->first('max_per_order') === 'Max per order must be at least 10.';
+            return $errors->first('max_per_order') === 'Max per order must be at least 20.';
         });
 
         $this->assertDatabaseCount('ticket_tiers', 0);
@@ -85,13 +85,13 @@ class OrganiserTicketTierValidationTest extends TestCase
         $updateResponse->assertRedirect(route('organiser.tiers.edit', [$event->id, $tier->id]));
         $updateResponse->assertSessionHasErrors(['max_per_order']);
         $updateResponse->assertSessionHas('errors', function ($errors) {
-            return $errors->first('max_per_order') === 'Max per order must be at least 10.';
+            return $errors->first('max_per_order') === 'Max per order must be at least 20.';
         });
 
         $tier->refresh();
 
         $this->assertSame('General Admission', $tier->name);
-        $this->assertSame(10, $tier->max_per_order);
+        $this->assertSame(20, $tier->max_per_order);
     }
 
     private function makeOrganiser(array $overrides = []): Organiser

@@ -56,17 +56,17 @@ class RefundService
             return ['success' => false, 'refund_id' => null, 'error' => 'Booking has already been fully refunded.'];
         }
 
-        $alreadyRefunded = (float) ($booking->refund_amount ?? 0);
-        $originalTotal = (float) $booking->total + $alreadyRefunded;
-        $refundAmount = $amount ?? max(0.0, (float) $booking->total);
+        $alreadyRefunded = round((float) ($booking->refund_amount ?? 0), 2);
+        $currentTotal = round((float) $booking->total, 2);
+        $refundAmount = round($amount ?? max(0.0, $currentTotal), 2);
         $amountPence  = (int) round($refundAmount * 100);
 
         if ($refundAmount <= 0) {
             return ['success' => false, 'refund_id' => null, 'error' => 'Refund amount must be greater than 0.'];
         }
 
-        if (($alreadyRefunded + $refundAmount) - $originalTotal > 0.01) {
-            return ['success' => false, 'refund_id' => null, 'error' => 'Refund exceeds original payment total.'];
+        if (($refundAmount - $currentTotal) > 0.01) {
+            return ['success' => false, 'refund_id' => null, 'error' => 'Refund exceeds remaining payment total.'];
         }
 
         // ── Resolve Stripe reference ─────────────────────────────────
@@ -86,18 +86,41 @@ class RefundService
                 ],
             ]);
 
-            $stripeRefund = StripeRefund::create($refundData);
+            $stripeRefund = $this->createStripeRefund($refundData);
 
             // ── Update booking in a transaction ────────────────────────
-            DB::transaction(function () use ($booking, $refundAmount, $reason, $stripeRefund, $restoreStock, $alreadyRefunded, $originalTotal) {
-                $updatedRefundAmount = $alreadyRefunded + $refundAmount;
-                $isFullRefund = $updatedRefundAmount >= $originalTotal;
+            DB::transaction(function () use ($booking, $refundAmount, $reason, $stripeRefund, $restoreStock, $alreadyRefunded, $currentTotal) {
+                $refundedAt = now();
+                $updatedRefundAmount = round($alreadyRefunded + $refundAmount, 2);
+                $remainingTotal = max(round($currentTotal - $refundAmount, 2), 0.0);
+                $isFullRefund = $remainingTotal <= 0.0;
+
+                if ($alreadyRefunded > 0 && !$booking->refundTransactions()->exists()) {
+                    $booking->refundTransactions()->create([
+                        'original_total' => round($currentTotal + $alreadyRefunded, 2),
+                        'refunded_amount' => $alreadyRefunded,
+                        'remaining_total' => $currentTotal,
+                        'currency' => $booking->currency,
+                        'reason' => $booking->refund_reason,
+                        'refunded_at' => $booking->refunded_at,
+                    ]);
+                }
 
                 $booking->update([
                     'status'        => $isFullRefund ? 'refunded' : 'partially_refunded',
                     'refund_amount' => $updatedRefundAmount,
-                    'refunded_at'   => now(),
+                    'refunded_at'   => $refundedAt,
                     'refund_reason' => $reason,
+                ]);
+
+                $booking->refundTransactions()->create([
+                    'stripe_refund_id' => $stripeRefund->id,
+                    'original_total' => $currentTotal,
+                    'refunded_amount' => $refundAmount,
+                    'remaining_total' => $remainingTotal,
+                    'currency' => $booking->currency,
+                    'reason' => $reason,
+                    'refunded_at' => $refundedAt,
                 ]);
 
                 // ── Restore stock if full refund ───────────────────────
@@ -214,5 +237,10 @@ class RefundService
         return in_array($reason, ['duplicate', 'fraudulent', 'requested_by_customer'])
             ? $reason
             : 'requested_by_customer';
+    }
+
+    protected function createStripeRefund(array $refundData): object
+    {
+        return StripeRefund::create($refundData);
     }
 }

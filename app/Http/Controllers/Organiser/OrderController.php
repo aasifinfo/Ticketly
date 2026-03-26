@@ -66,7 +66,7 @@ class OrderController extends Controller
         $organiser = $request->attributes->get('organiser');
         $eventIds  = Event::where('organiser_id', $organiser->id)->pluck('id');
 
-        $booking   = Booking::with(['event', 'items.ticketTier', 'promoCode'])
+        $booking   = Booking::with(['event', 'items.ticketTier', 'promoCode', 'refundTransactions'])
             ->whereIn('event_id', $eventIds)
             ->findOrFail($id);
 

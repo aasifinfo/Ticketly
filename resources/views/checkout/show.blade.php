@@ -113,10 +113,13 @@
                 </section>
 
                 <section id="contact-section" class="rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_10px_30px_rgba(15,23,42,0.04)] max-[375px]:rounded-[24px] max-[375px]:p-4 sm:p-8">
-                    <h2 class="text-[1.45rem] font-extrabold tracking-[-0.04em] text-slate-900 max-[375px]:text-[1.25rem] sm:text-[1.6rem]">Contact Information</h2>
+                    <div class="flex items-start justify-between gap-3 max-[375px]:gap-2">
+                        <h2 class="text-[1.45rem] font-extrabold tracking-[-0.04em] text-slate-900 max-[375px]:text-[1.25rem] sm:text-[1.6rem]">Contact Information</h2>
+                        <span class="shrink-0 text-sm font-semibold text-rose-600 max-[375px]:text-xs"><span aria-hidden="true">*</span> Required</span>
+                    </div>
                     <div class="mt-8 space-y-7 max-[375px]:mt-5 max-[375px]:space-y-5">
                         <div>
-                            <label for="customer-name" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">Full Name</label>
+                            <label for="customer-name" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">Full Name <span class="text-rose-500" aria-hidden="true">*</span></label>
                             <input id="customer-name" type="text" autocomplete="name" aria-describedby="customer-name-error"
                                    maxlength="100" required
                                    class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"
@@ -124,7 +127,7 @@
                             <p id="customer-name-error" class="hidden mt-2 text-sm text-rose-600"></p>
                         </div>
                         <div>
-                            <label for="customer-email" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">Email Address</label>
+                            <label for="customer-email" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">Email Address <span class="text-rose-500" aria-hidden="true">*</span></label>
                             <input id="customer-email" type="email" autocomplete="email" aria-describedby="customer-email-error"
                                    maxlength="100" required
                                    class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"
@@ -132,7 +135,7 @@
                             <p id="customer-email-error" class="hidden mt-2 text-sm text-rose-600"></p>
                         </div>
                         <div>
-                            <label for="customer-phone" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">Phone Number</label>
+                            <label for="customer-phone" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">Phone Number <span class="text-rose-500" aria-hidden="true">*</span></label>
                             <input id="customer-phone" type="tel" autocomplete="tel" aria-describedby="customer-phone-error"
                                    maxlength="11" minlength="11" inputmode="numeric" pattern="07[0-9]{9}" title="Enter exactly 11 digits starting with 07" required
                                     class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"

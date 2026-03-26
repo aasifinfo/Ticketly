@@ -657,9 +657,10 @@
         'pending' => 'events-item__approval--pending',
       ][$approvalStatus] ?? 'events-item__approval--pending';
       $menuId = 'event-menu-' . $event->id;
-      $statusToggleLabel = $event->status === 'published' ? 'Move to Draft' : 'Publish';
+      $statusToggleLabel = $approvalStatus === 'rejected' ? 'Rejected' : ($event->status === 'published' ? 'Move to Draft' : 'Publish');
       $statusToggleValue = $event->status === 'published' ? 'draft' : 'published';
-      $statusToggleIcon = $event->status === 'published' ? 'D' : 'P';
+      $statusToggleIcon = $approvalStatus === 'rejected' ? 'R' : ($event->status === 'published' ? 'D' : 'P');
+      $statusToggleDisabled = $approvalStatus === 'rejected';
       $canQuickView = $event->status === 'published' && $event->approval_status === 'approved';
     @endphp
     <article class="events-item">
@@ -714,15 +715,15 @@
           <div class="events-menu__group">
             <a href="{{ route('organiser.events.show', $event->id) }}" class="events-dropdown-link" role="menuitem">
               <span class="events-dropdown-icon">V</span>
-              <span>View event</span>
+              <span>View Event</span>
             </a>
             <a href="{{ route('organiser.events.edit', $event->id) }}" class="events-dropdown-link" role="menuitem">
               <span class="events-dropdown-icon">E</span>
-              <span>Edit event</span>
+              <span>Edit Event</span>
             </a>
             <a href="{{ route('organiser.tiers.index', $event->id) }}" class="events-dropdown-link" role="menuitem">
               <span class="events-dropdown-icon">T</span>
-              <span>Ticket tiers</span>
+              <span>Ticket Tiers</span>
             </a>
             <a href="{{ route('organiser.sponsorships.index', $event->id) }}" class="events-dropdown-link" role="menuitem">
               <span class="events-dropdown-icon">S</span>
@@ -736,7 +737,7 @@
             <form action="{{ route('organiser.events.status', $event->id) }}" method="POST">
               @csrf
               <input type="hidden" name="status" value="{{ $statusToggleValue }}">
-              <button type="submit" class="events-dropdown-btn" role="menuitem">
+              <button type="submit" class="events-dropdown-btn{{ $statusToggleDisabled ? ' events-dropdown-btn--danger' : '' }}" role="menuitem" {{ $statusToggleDisabled ? 'disabled aria-disabled=true' : '' }}>
                 <span class="events-dropdown-icon">{{ $statusToggleIcon }}</span>
                 <span>{{ $statusToggleLabel }}</span>
               </button>
@@ -748,22 +749,21 @@
 
           <div class="events-menu__group">
             @if(!$event->isCancelled())
-            <form action="{{ route('organiser.events.status', $event->id) }}" method="POST" onsubmit="var reason = prompt('Please enter a cancellation reason (minimum 10 characters):'); if(reason === null){ return false; } reason = reason.trim(); if(reason.length < 10){ alert('Cancellation reason must be at least 10 characters.'); return false; } this.querySelector('input[name=&quot;cancellation_reason&quot;]').value = reason; return confirm('Cancel this event?');">
-              @csrf
-              <input type="hidden" name="status" value="cancelled">
-              <input type="hidden" name="cancellation_reason" value="">
-              <button type="submit" class="events-dropdown-btn events-dropdown-btn--danger" role="menuitem">
+              <button type="button"
+                      class="events-dropdown-btn events-dropdown-btn--danger"
+                      role="menuitem"
+                      data-cancel-event-trigger
+                      data-cancel-action="{{ route('organiser.events.status', $event->id) }}">
                 <span class="events-dropdown-icon">C</span>
-                <span>Cancel</span>
+                <span>Cancel Event</span>
               </button>
-            </form>
             @endif
             <form action="{{ route('organiser.events.destroy', $event->id) }}" method="POST" data-confirm="Delete this event?">
               @csrf
               @method('DELETE')
               <button type="submit" class="events-dropdown-btn events-dropdown-btn--danger" role="menuitem">
                 <span class="events-dropdown-icon">X</span>
-                <span>Delete</span>
+                <span>Delete Event</span>
               </button>
             </form>
           </div>
@@ -780,6 +780,27 @@
   </section>
 
   <div class="events-pagination" data-events-pagination>{{ $events->links() }}</div>
+</div>
+
+<div id="cancel-modal" class="hidden fixed inset-0 z-50 bg-gray-950/90 flex items-center justify-center px-4">
+  <div class="bg-gray-900 border border-red-800/60 rounded-2xl p-8 max-w-md w-full">
+    <h3 class="text-lg font-extrabold text-white mb-2">Cancel This Event?</h3>
+    <p class="text-gray-400 text-sm mb-5">All ticket holders will be notified by email and SMS. All paid bookings will be marked for refund.</p>
+    <form id="cancel-modal-form" action="" method="POST">
+      @csrf
+      <input type="hidden" name="status" value="cancelled">
+      <div class="mb-4">
+        <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Reason for Cancellation *</label>
+        <textarea name="cancellation_reason" rows="4" required minlength="10" maxlength="1000"
+                  class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                  placeholder="Please explain why this event is being cancelled..."></textarea>
+      </div>
+      <div class="flex gap-3">
+        <button type="submit" class="flex-1 bg-red-700 hover:bg-red-600 text-white font-bold py-3 rounded-xl text-sm transition-colors">Confirm Cancellation</button>
+        <button type="button" data-cancel-modal-close class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 rounded-xl text-sm transition-colors">Go Back</button>
+      </div>
+    </form>
+  </div>
 </div>
 @endsection
 
@@ -898,7 +919,46 @@
     }
   }
 
+  function closeCancelModal() {
+    var modal = document.getElementById('cancel-modal');
+    var form = document.getElementById('cancel-modal-form');
+    if (!modal || !form) return;
+
+    modal.classList.add('hidden');
+    form.reset();
+    form.setAttribute('action', '');
+  }
+
   document.addEventListener('click', function (event) {
+    var cancelTrigger = event.target.closest('[data-cancel-event-trigger]');
+    if (cancelTrigger) {
+      var modal = document.getElementById('cancel-modal');
+      var form = document.getElementById('cancel-modal-form');
+      var textarea = form ? form.querySelector('textarea[name="cancellation_reason"]') : null;
+
+      if (!modal || !form || !textarea) return;
+
+      document.querySelectorAll('.events-menu.is-open').forEach(function (openMenu) {
+        openMenu.classList.remove('is-open');
+        var toggle = openMenu.parentElement.querySelector('.events-menu-toggle');
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+      });
+
+      form.setAttribute('action', cancelTrigger.getAttribute('data-cancel-action'));
+      modal.classList.remove('hidden');
+
+      window.setTimeout(function () {
+        textarea.focus();
+      }, 0);
+
+      return;
+    }
+
+    if (event.target.closest('[data-cancel-modal-close]')) {
+      closeCancelModal();
+      return;
+    }
+
     if (event.target.closest('[data-menu-root]')) return;
     document.querySelectorAll('.events-menu.is-open').forEach(function (openMenu) {
       openMenu.classList.remove('is-open');

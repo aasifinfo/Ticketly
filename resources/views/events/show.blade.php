@@ -13,6 +13,7 @@
     $organiserInitials = $event->organiser->initials ?? 'PE';
     $ticketItemsOld = collect($selectedTicketItems ?? old('items', []));
     $activeReservationToken = $activeReservation?->token;
+    $activeReservationSeconds = $activeReservation?->secondsRemaining() ?? 0;
     $reservedQuantities = $ticketItemsOld
         ->mapWithKeys(fn ($item) => [(int) data_get($item, 'ticket_tier_id') => (int) data_get($item, 'quantity', 0)]);
     $eventStartLabel = ticketly_format_datetime($event->starts_at);
@@ -59,7 +60,7 @@
                 </div>
             </div>
 
-            <div class="mx-auto mt-12 max-w-5xl text-center text-white sm:mt-16">
+            <div aria-hidden="true" class="invisible mx-auto mt-12 max-w-5xl text-center text-white sm:mt-16">
                 <div class="inline-flex rounded-full bg-[linear-gradient(135deg,#6d28d9,#8b5cf6)] px-5 py-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-white shadow-[0_12px_30px_rgba(109,40,217,0.35)] sm:px-8 sm:py-3 sm:text-[15px] sm:tracking-[0.2em]" style="color:#ffffff !important;">
                     {{ $event->category ? strtoupper($event->category) : 'Live Event' }}
                 </div>
@@ -267,8 +268,14 @@
                         <div class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-6">
                             <h2 class="text-[1.75rem] font-bold tracking-[-0.03em] text-slate-900">Select Tickets</h2>
                             @if($activeReservationToken)
-                                <div class="mt-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-700">
-                                    Your previous ticket selection is still saved. You can change quantities and continue checkout.
+                                <div data-active-reservation-alert class="mt-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-700">
+                                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <p>Your previous ticket selection is still saved. You can change quantities and continue checkout.</p>
+                                        <div class="inline-flex items-center gap-3 rounded-xl border border-violet-200 bg-white/80 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-violet-700">
+                                            <span>Timer</span>
+                                            <span data-event-reservation-countdown class="text-sm font-extrabold tracking-[0.2em] text-violet-600">{{ gmdate('i:s', $activeReservationSeconds) }}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             @endif
                             <form action="{{ route('reservation.store') }}" method="POST" id="ticket-form" class="mt-5">
@@ -358,6 +365,34 @@
 <script>
 const tiers = @json($tiersForJs), feePct = {{ (float) ticketly_setting('service_fee_percentage', config('ticketly.service_fee_percentage', 5)) }}, portalFeePct = {{ (float) ticketly_setting('portal_fee_percentage', config('ticketly.portal_fee_percentage', 10)) }}, currencySymbol = @js(ticketly_currency_symbol());
 const money = (amount) => currencySymbol + Number(amount).toFixed(2);
+const activeReservationCountdown = document.querySelector('[data-event-reservation-countdown]');
+let activeReservationSecs = {{ $activeReservationSeconds }};
+function updateActiveReservationCountdown(seconds) {
+    if (!activeReservationCountdown) return;
+    const safeSeconds = Math.max(0, seconds);
+    const mins = String(Math.floor(safeSeconds / 60)).padStart(2, '0');
+    const secs = String(safeSeconds % 60).padStart(2, '0');
+    activeReservationCountdown.textContent = `${mins}:${secs}`;
+    activeReservationCountdown.setAttribute('aria-label', `${mins} minutes ${secs} seconds remaining`);
+}
+
+if (activeReservationCountdown) {
+    const activeReservationReturnUrl = @js(route('events.show', $event->slug) . '#ticket-form');
+    updateActiveReservationCountdown(activeReservationSecs);
+
+    const activeReservationTick = setInterval(() => {
+        if (activeReservationSecs <= 0) {
+            clearInterval(activeReservationTick);
+            updateActiveReservationCountdown(0);
+            window.location.replace(activeReservationReturnUrl);
+            return;
+        }
+
+        activeReservationSecs -= 1;
+        updateActiveReservationCountdown(activeReservationSecs);
+    }, 1000);
+}
+
 function setTierState(id, qty) { const card = document.getElementById('tier-card-' + id); if (!card) return; card.classList.toggle('border-violet-500', qty > 0); card.classList.toggle('border-slate-200', qty === 0); card.style.boxShadow = qty > 0 ? '0 0 0 3px rgba(124,58,237,.08)' : ''; }
 function changeQty(id, delta) { const input = document.getElementById('qty-' + id), display = document.getElementById('qty-display-' + id); if (!input || !display) return; const max = parseInt(input.dataset.max || '0', 10); const value = Math.max(0, Math.min(max, (parseInt(input.value || '0', 10) + delta))); input.value = value; display.textContent = value; updateSummary(); }
 function updateSummary() {

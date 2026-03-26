@@ -46,6 +46,11 @@ class Booking extends Model
 
     public function event()      { return $this->belongsTo(Event::class); }
     public function items()      { return $this->hasMany(BookingItem::class); }
+   public function refundTransactions() {
+    return $this->hasMany(BookingRefund::class)
+        ->orderBy('refunded_at', 'asc')
+        ->orderBy('id', 'asc');
+    }
     public function reservation(){ return $this->belongsTo(Reservation::class); }
     public function promoCode()  { return $this->belongsTo(PromoCode::class); }
     public function customer()   { return $this->belongsTo(Customer::class); }
