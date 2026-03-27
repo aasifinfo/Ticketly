@@ -34,7 +34,7 @@
       </div>
       <div>
         <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Max Per Order</label>
-        <input type="number" name="max_per_order" value="{{ old('max_per_order', 20) }}" min="20" step="1" inputmode="numeric" required aria-describedby="max_per_order-error" class="w-full bg-gray-800 border {{ $errors->has('max_per_order') ? 'border-rose-500/60 focus:ring-rose-500' : 'border-gray-700 focus:ring-indigo-500' }} rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2">
+        <input type="number" name="max_per_order" value="{{ old('max_per_order', 20) }}" min="1" max="20" step="1" inputmode="numeric" required aria-describedby="max_per_order-error" class="w-full bg-gray-800 border {{ $errors->has('max_per_order') ? 'border-rose-500/60 focus:ring-rose-500' : 'border-gray-700 focus:ring-indigo-500' }} rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2">
         <p id="max_per_order-error" class="mt-2 text-sm text-rose-400 {{ $errors->has('max_per_order') ? '' : 'hidden' }}">{{ $errors->first('max_per_order') }}</p>
       </div>
     </div>
@@ -64,9 +64,11 @@ document.addEventListener('DOMContentLoaded', function () {
       invalid: 'Minimum per order must be at least 1.',
     },
     max_per_order: {
-      min: 20,
+      min: 1,
+      max: 20,
       required: 'Max per order is required.',
-      invalid: 'Max per order must be at least 20.',
+      invalid: 'Max per order is invalid.',
+      tooHigh: 'Max per order must be maximum 20.',
     },
   };
 

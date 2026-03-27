@@ -13,6 +13,7 @@ use App\Services\ServiceFeeCalculator;
 use App\Services\VisitorGeoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Stripe\PaymentIntent;
 use Stripe\Exception\InvalidRequestException;
 use Stripe\Stripe;
@@ -85,26 +86,18 @@ class CheckoutController extends Controller
         $promoCode = null;
         $discountAmount = 0.0;
         if (!empty($validated['promo_code'])) {
-            $promoCode = PromoCode::where('code', strtoupper(trim($validated['promo_code'])))
-                ->where('is_active', true)
-                ->whereNull('deleted_at')
-                ->first();
-            if ($promoCode && $promoCode->isValid()) {
-                $event = $reservation->event;
-                $isApplicable = false;
-                if ($promoCode->event_id) {
-                    $isApplicable = (int) $promoCode->event_id === (int) $reservation->event_id;
-                } elseif ($promoCode->organiser_id && $event?->organiser_id) {
-                    $isApplicable = (int) $promoCode->organiser_id === (int) $event->organiser_id;
-                }
+            $resolvedPromo = PromoCode::resolveForEvent($reservation->event, (string) $validated['promo_code']);
 
-                if ($isApplicable) {
-                    $discountAmount = $promoCode->calculateDiscount($subtotal);
-                } else {
-                    $promoCode = null;
-                }
-            } else {
-                $promoCode = null;
+            if ($resolvedPromo['message']) {
+                throw ValidationException::withMessages([
+                    'promo_code' => $resolvedPromo['message'],
+                ]);
+            }
+
+            $promoCode = $resolvedPromo['promo'];
+
+            if ($promoCode) {
+                $discountAmount = $promoCode->calculateDiscount($subtotal);
             }
         }
 

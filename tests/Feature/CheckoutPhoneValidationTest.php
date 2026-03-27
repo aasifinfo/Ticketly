@@ -177,8 +177,10 @@ class CheckoutPhoneValidationTest extends TestCase
         $response = $this->get('/checkout/' . $reservation->token . '/success');
 
         $response->assertOk();
+        $response->assertSee('ticketly-global-loader', false);
         $response->assertSee('window.history.pushState', false);
         $response->assertSee('window.location.replace(data.redirect)', false);
+        $response->assertSee('ticketly:checkout-complete-token', false);
     }
 
     public function test_checkout_page_renders_updated_contact_validation_markup(): void
@@ -188,11 +190,13 @@ class CheckoutPhoneValidationTest extends TestCase
         $response = $this->get('/checkout/' . $reservation->token);
 
         $response->assertOk();
+        $response->assertSee('ticketly-global-loader', false);
         $response->assertSee('maxlength="100"', false);
         $response->assertSee('Full name maximum limit reached.', false);
         $response->assertSee('Email address maximum limit reached.', false);
         $response->assertSee('Phone number must start with 07', false);
         $response->assertSee('Phone Number Must Be Exactly 11 digits', false);
         $response->assertSee('window.location.replace(checkoutSuccessUrl);', false);
+        $response->assertSee('ticketly:checkout-active-token', false);
     }
 }

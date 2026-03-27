@@ -5,12 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', 'Organiser') - Ticketly</title>
+@include('partials.protected-history-guard-head', ['guardNamespace' => 'organiser', 'guardState' => session('organiser_auth_state'), 'fallbackRedirect' => route('organiser.login')])
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%236366f1'/%3E%3Cstop offset='1' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='8' y='10' width='48' height='44' rx='12' fill='url(%23g)'/%3E%3Cpath d='M22 24h20a4 4 0 0 0 4 4v8a4 4 0 0 0-4 4H22a4 4 0 0 0-4-4v-8a4 4 0 0 0 4-4Z' fill='white' fill-opacity='.96'/%3E%3Cpath d='M32 24v16' stroke='url(%23g)' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 @include('partials.theme-system-head')
+@include('partials.global-ticket-loader-head')
 <style>
   @media (max-width: 767px) {
     #sidebar {
@@ -133,6 +135,7 @@
 @yield('head')
 </head>
 <body class="bg-gray-950 text-gray-100 @yield('body-class')">
+@include('partials.global-ticket-loader')
 
 <div class="flex h-screen overflow-hidden">
   <div id="sidebar-backdrop" onclick="closeSidebar()" aria-hidden="true"></div>
@@ -247,7 +250,7 @@
     </div>
 
     {{-- Logout Button --}}
-    <form action="{{ route('organiser.logout') }}" method="POST" data-logout-guard data-logout-redirect="{{ route('organiser.login') }}">
+    <form action="{{ route('organiser.logout') }}" method="POST" data-logout-guard data-logout-namespace="organiser" data-logout-state="{{ session('organiser_auth_state') }}" data-logout-redirect="{{ route('organiser.login') }}">
         @csrf
         <button type="submit"
             class="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-gray-800 transition">
@@ -363,61 +366,8 @@
 
 @include('partials.theme-system-script')
 @include('partials.password-toggle-script')
+@include('partials.protected-history-guard-script', ['guardNamespace' => 'organiser', 'guardState' => session('organiser_auth_state'), 'fallbackRedirect' => route('organiser.login')])
 <script>
-  (function () {
-    var logoutGuardKey = 'ticketly:logout-guard';
-    var logoutRedirectKey = 'ticketly:logout-redirect';
-    var fallbackRedirect = @json(route('organiser.login'));
-
-    function getRedirectUrl() {
-      try {
-        return sessionStorage.getItem(logoutRedirectKey) || fallbackRedirect;
-      } catch (error) {
-        return fallbackRedirect;
-      }
-    }
-
-    function clearLogoutGuard() {
-      try {
-        sessionStorage.removeItem(logoutGuardKey);
-        sessionStorage.removeItem(logoutRedirectKey);
-      } catch (error) {
-        // Ignore storage access failures.
-      }
-    }
-
-    function redirectIfRestoredAfterLogout() {
-      try {
-        if (sessionStorage.getItem(logoutGuardKey) !== '1') return;
-      } catch (error) {
-        return;
-      }
-
-      window.location.replace(getRedirectUrl());
-    }
-
-    document.addEventListener('submit', function (event) {
-      var form = event.target.closest('form[data-logout-guard]');
-      if (!form) return;
-
-      try {
-        sessionStorage.setItem(logoutGuardKey, '1');
-        sessionStorage.setItem(logoutRedirectKey, form.getAttribute('data-logout-redirect') || fallbackRedirect);
-      } catch (error) {
-        // Ignore storage access failures.
-      }
-    });
-
-    window.addEventListener('pageshow', function (event) {
-      if (event.persisted) {
-        redirectIfRestoredAfterLogout();
-        return;
-      }
-
-      clearLogoutGuard();
-    });
-  })();
-
   function toggleSidebar() {
     var sidebar = document.getElementById('sidebar');
     var backdrop = document.getElementById('sidebar-backdrop');
@@ -483,5 +433,6 @@
 </script>
 @yield('scripts')
 @include('partials.date-input-display')
+@include('partials.global-ticket-loader-script')
 </body>
 </html>

@@ -3,10 +3,12 @@
 namespace App\Support;
 
 use App\Models\Admin;
+use Illuminate\Support\Str;
 
 class AdminAuth
 {
     private const SESSION_KEY = 'admin_id';
+    private const AUTH_STATE_KEY = 'admin_auth_state';
     private const INACTIVITY_MINS = 90;
 
     public static function user(): ?Admin
@@ -29,6 +31,10 @@ class AdminAuth
             return null;
         }
 
+        if (!session(self::AUTH_STATE_KEY)) {
+            self::issueHistoryState();
+        }
+
         session(['admin_last_active' => now()->timestamp]);
         $admin->update(['last_active_at' => now()]);
 
@@ -39,13 +45,22 @@ class AdminAuth
     {
         session([
             self::SESSION_KEY => $admin->id,
+            self::AUTH_STATE_KEY => (string) Str::uuid(),
             'admin_last_active' => now()->timestamp,
         ]);
         $admin->update(['last_active_at' => now()]);
     }
 
+    public static function issueHistoryState(): string
+    {
+        $state = (string) Str::uuid();
+        session([self::AUTH_STATE_KEY => $state]);
+
+        return $state;
+    }
+
     public static function logout(): void
     {
-        session()->forget([self::SESSION_KEY, 'admin_last_active']);
+        session()->forget([self::SESSION_KEY, self::AUTH_STATE_KEY, 'admin_last_active']);
     }
 }

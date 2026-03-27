@@ -12,11 +12,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use App\Mail\AdminNewOrganiser;
 
 class AuthController extends Controller
 {
     private const SESSION_KEY     = 'organiser_id';
+    private const AUTH_STATE_KEY  = 'organiser_auth_state';
     private const INACTIVITY_MINS = 60; // Session expires after 60 minutes of inactivity
 
     // ── Register ──────────────────────────────────────────────────
@@ -110,6 +112,7 @@ class AuthController extends Controller
         $admin = Admin::where('email', $validated['email'])->first();
         if ($admin && Hash::check($validated['password'], $admin->password)) {
             $request->session()->forget([self::SESSION_KEY, 'organiser_last_active']);
+            $request->session()->regenerate();
             AdminAuth::login($admin);
             return redirect()->route('admin.dashboard');
         }
@@ -132,8 +135,11 @@ class AuthController extends Controller
             return redirect()->route('organiser.pending');
         }
 
+        $request->session()->regenerate();
+
         session([
             self::SESSION_KEY              => $organiser->id,
+            self::AUTH_STATE_KEY           => (string) Str::uuid(),
             'organiser_last_active'        => now()->timestamp,
         ]);
 
@@ -145,8 +151,16 @@ class AuthController extends Controller
     // ── Logout ────────────────────────────────────────────────────
     public function logout(Request $request)
     {
-        $request->session()->forget([self::SESSION_KEY, 'organiser_last_active']);
-        return redirect()->route('organiser.login')->with('info', 'You have been logged out.');
+        $request->session()->forget([self::SESSION_KEY, self::AUTH_STATE_KEY, 'organiser_last_active']);
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        $response = redirect()->route('organiser.login')->with('info', 'You have been logged out.');
+        $response->headers->set('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', 'Sat, 01 Jan 1990 00:00:00 GMT');
+
+        return $response;
     }
 
     // ── Pending Approval ──────────────────────────────────────────
@@ -243,6 +257,10 @@ class AuthController extends Controller
         if (!$organiser || !$organiser->isApproved() || $organiser->isSuspended()) {
             session()->forget([self::SESSION_KEY, 'organiser_last_active']);
             return null;
+        }
+
+        if (!session(self::AUTH_STATE_KEY)) {
+            session([self::AUTH_STATE_KEY => (string) Str::uuid()]);
         }
 
         // Refresh activity timestamp

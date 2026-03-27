@@ -125,16 +125,49 @@ class OrderController extends Controller
             return back()->withErrors(['partial_refund' => 'Refund quantity exceeds purchased quantity.']);
         }
 
+        $currentTicketCount = max(1, (int) $booking->items->sum('quantity'));
         $refundSubtotal = round(((float) $item->unit_price) * $refundQty, 2);
         $newSubtotal = max(0.0, round(((float) $booking->subtotal) - $refundSubtotal, 2));
-        $discount = 0.0;
-        if ($booking->promoCode) {
-            $discount = $booking->promoCode->calculateDiscount($newSubtotal);
-        }
+        $pricing = null;
+        $bookingUpdates = [];
 
-        $pricing = ServiceFeeCalculator::total($newSubtotal, $discount);
-        $newTotal = (float) $pricing['total'];
-        $refundAmount = max(0.0, round(((float) $booking->total) - $newTotal, 2));
+        if ($booking->promo_code_id) {
+            $refundAmount = $this->calculatePromoPartialRefundAmount($booking, $refundQty, $currentTicketCount);
+            $newTotal = max(0.0, round(((float) $booking->total) - $refundAmount, 2));
+
+            $bookingUpdates = $newTotal <= 0.0
+                ? [
+                    'subtotal' => 0.0,
+                    'discount_amount' => 0.0,
+                    'portal_fee' => 0.0,
+                    'service_fee' => 0.0,
+                    'total' => 0.0,
+                ]
+                : [
+                    'subtotal' => $newSubtotal,
+                    // Preserve the already-applied promo discount so it is not recalculated again.
+                    'discount_amount' => min(round((float) $booking->discount_amount, 2), $newSubtotal),
+                    'portal_fee' => round((float) $booking->portal_fee, 2),
+                    'service_fee' => round((float) $booking->service_fee, 2),
+                    'total' => $newTotal,
+                ];
+        } else {
+            $discount = 0.0;
+            if ($booking->promoCode) {
+                $discount = $booking->promoCode->calculateDiscount($newSubtotal);
+            }
+
+            $pricing = ServiceFeeCalculator::total($newSubtotal, $discount);
+            $newTotal = (float) $pricing['total'];
+            $refundAmount = max(0.0, round(((float) $booking->total) - $newTotal, 2));
+            $bookingUpdates = [
+                'subtotal' => $newSubtotal,
+                'discount_amount' => $pricing['discount'],
+                'portal_fee' => $pricing['portal_fee'],
+                'service_fee' => $pricing['service_fee'],
+                'total' => $pricing['total'],
+            ];
+        }
 
         if ($refundAmount <= 0) {
             return back()->withErrors(['partial_refund' => 'Refund amount would be 0. Adjust quantity.']);
@@ -145,7 +178,7 @@ class OrderController extends Controller
             return back()->withErrors(['partial_refund' => $result['error'] ?? 'Refund failed.']);
         }
 
-        DB::transaction(function () use ($booking, $item, $refundQty, $newSubtotal, $discount, $pricing) {
+        DB::transaction(function () use ($booking, $item, $refundQty, $bookingUpdates) {
             $remainingQty = $item->quantity - $refundQty;
 
             if ($remainingQty <= 0) {
@@ -160,15 +193,26 @@ class OrderController extends Controller
             TicketTier::where('id', $item->ticket_tier_id)
                 ->increment('available_quantity', $refundQty);
 
-            $booking->update([
-                'subtotal' => $newSubtotal,
-                'discount_amount' => $pricing['discount'],
-                'portal_fee' => $pricing['portal_fee'],
-                'service_fee' => $pricing['service_fee'],
-                'total' => $pricing['total'],
-            ]);
+            $booking->update($bookingUpdates);
         });
 
         return back()->with('success', 'Partial refund processed and ticket quantities updated.');
+    }
+
+    private function calculatePromoPartialRefundAmount(Booking $booking, int $refundQty, int $currentTicketCount): float
+    {
+        $currentTotal = round((float) $booking->total, 2);
+
+        if ($currentTotal <= 0 || $currentTicketCount <= 0) {
+            return 0.0;
+        }
+
+        if ($refundQty >= $currentTicketCount) {
+            return $currentTotal;
+        }
+
+        $perTicketPaidAmount = $currentTotal / $currentTicketCount;
+
+        return min(round($perTicketPaidAmount * $refundQty, 2), $currentTotal);
     }
 }

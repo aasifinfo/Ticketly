@@ -12,9 +12,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 @include('partials.theme-system-head')
+@include('partials.global-ticket-loader-head')
 @yield('head')
 </head>
 <body class="bg-gray-950 text-gray-100">
+@include('partials.global-ticket-loader')
 
 {{-- Public Navigation --}}
 <header role="banner" class="sticky top-0 z-50">
@@ -143,54 +145,11 @@
   })();
 </script>
 @if(request()->routeIs('organiser.login', 'admin.login'))
-<script>
-  (function () {
-    var logoutGuardKey = 'ticketly:logout-guard';
-    var logoutRedirectKey = 'ticketly:logout-redirect';
-
-    function isLogoutGuardEnabled() {
-      try {
-        return sessionStorage.getItem(logoutGuardKey) === '1';
-      } catch (error) {
-        return false;
-      }
-    }
-
-    function getRedirectUrl() {
-      try {
-        return sessionStorage.getItem(logoutRedirectKey) || window.location.href;
-      } catch (error) {
-        return window.location.href;
-      }
-    }
-
-    function pinCurrentHistoryEntry() {
-      try {
-        window.history.pushState({ ticketlyLogoutGuard: true }, '', window.location.href);
-      } catch (error) {
-        // Ignore history API failures.
-      }
-    }
-
-    if (!isLogoutGuardEnabled()) return;
-
-    pinCurrentHistoryEntry();
-
-    window.addEventListener('popstate', function () {
-      if (!isLogoutGuardEnabled()) return;
-      pinCurrentHistoryEntry();
-      window.location.replace(getRedirectUrl());
-    });
-
-    window.addEventListener('pageshow', function (event) {
-      if (!event.persisted || !isLogoutGuardEnabled()) return;
-      pinCurrentHistoryEntry();
-    });
-  })();
-</script>
+@include('partials.login-history-guard-script', ['guardNamespace' => request()->routeIs('admin.login') ? 'admin' : 'organiser'])
 @endif
 @yield('scripts')
 @include('partials.date-input-display')
+@include('partials.global-ticket-loader-script')
 </body>
 </html>
 

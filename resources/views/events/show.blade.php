@@ -102,8 +102,10 @@
                     </section>
 
                     <section class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-8">
-                        <h2 class="text-[1.75rem] font-bold tracking-[-0.03em] text-slate-900">About This Event</h2>
-                        <p class="mt-6 max-w-4xl text-[1.02rem] leading-8 text-slate-500">{{ $aboutText }}</p>
+                        <div class="mx-auto w-full max-w-4xl">
+                            <h2 class="text-[1.75rem] font-bold tracking-[-0.03em] text-slate-900">About This Event</h2>
+                            <p class="mt-6 break-words text-[1.02rem] leading-8 text-slate-500 md:text-justify [overflow-wrap:anywhere]">{{ $aboutText }}</p>
+                        </div>
                     </section>
 
                     <section class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-8">

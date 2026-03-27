@@ -23,6 +23,14 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         AdminAuth::logout();
-        return redirect()->route('organiser.login')->with('info', 'You have been logged out.');
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        $response = redirect()->route('admin.login')->with('info', 'You have been logged out.');
+        $response->headers->set('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', 'Sat, 01 Jan 1990 00:00:00 GMT');
+
+        return $response;
     }
 }

@@ -1,6 +1,10 @@
 @extends('layouts.app')
 @section('title', 'Processing Payment...')
 
+@section('head')
+@include('partials.checkout-transition-guard-head', ['reservationToken' => $reservation->token])
+@endsection
+
 @section('content')
 <div class="min-h-screen flex items-center justify-center px-4" role="main">
   <div class="text-center max-w-md" aria-live="polite" aria-atomic="true">
@@ -21,11 +25,55 @@
 @section('scripts')
 <script>
 (function() {
+    const activeTokenKey = 'ticketly:checkout-active-token';
+    const successUrlKey = 'ticketly:checkout-success-url';
+    const completeTokenKey = 'ticketly:checkout-complete-token';
+    const completeRedirectKey = 'ticketly:checkout-complete-redirect';
     const pollUrl = '{{ route('checkout.poll', $reservation->token) }}?attempt=1';
     const checkoutUrl = '{{ route('checkout.show', $reservation->token) }}';
     const fallbackEventUrl = '{{ route('events.show', $reservation->event->slug) }}';
     let attempts = 0;
     const maxAttempts = 30;
+
+    function getItem(key) {
+        try {
+            return sessionStorage.getItem(key) || '';
+        } catch (error) {
+            return '';
+        }
+    }
+
+    function setItem(key, value) {
+        try {
+            sessionStorage.setItem(key, value);
+        } catch (error) {
+            // Ignore storage access failures.
+        }
+    }
+
+    function removeItem(key) {
+        try {
+            sessionStorage.removeItem(key);
+        } catch (error) {
+            // Ignore storage access failures.
+        }
+    }
+
+    function clearCheckoutTransitionState() {
+        if (getItem(activeTokenKey) === '{{ $reservation->token }}') {
+            removeItem(activeTokenKey);
+        }
+        if (getItem(successUrlKey) === window.location.href) {
+            removeItem(successUrlKey);
+        }
+        if (getItem(completeTokenKey) === '{{ $reservation->token }}') {
+            removeItem(completeTokenKey);
+        }
+        removeItem(completeRedirectKey);
+    }
+
+    setItem(activeTokenKey, '{{ $reservation->token }}');
+    setItem(successUrlKey, window.location.href);
 
     window.history.pushState({ checkoutProcessing: true }, '', window.location.href);
     window.addEventListener('popstate', function () {
@@ -39,16 +87,20 @@
             const data = await res.json();
 
             if (data.status === 'paid') {
+                setItem(completeTokenKey, '{{ $reservation->token }}');
+                setItem(completeRedirectKey, data.redirect);
                 document.getElementById('status-msg').textContent = 'Payment confirmed! Redirecting...';
                 window.location.replace(data.redirect);
                 return;
             }
             if (data.status === 'failed') {
+                clearCheckoutTransitionState();
                 document.getElementById('status-msg').textContent = 'Payment failed.';
                 setTimeout(() => { window.location.replace(checkoutUrl); }, 2000);
                 return;
             }
             if (data.status === 'expired') {
+                clearCheckoutTransitionState();
                 document.getElementById('status-msg').textContent = data.message || 'Your hold expired. Redirecting to event page...';
                 setTimeout(() => {
                     window.location.replace(data.redirect_to || fallbackEventUrl);
@@ -65,7 +117,7 @@
         setTimeout(poll, 2000);
     }
 
-    setTimeout(poll, 1500);
+    poll();
 })();
 </script>
 @endsection

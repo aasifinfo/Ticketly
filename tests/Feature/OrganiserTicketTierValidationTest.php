@@ -41,7 +41,7 @@ class OrganiserTicketTierValidationTest extends TestCase
         $this->assertDatabaseCount('ticket_tiers', 0);
     }
 
-    public function test_organiser_cannot_create_or_update_tier_with_max_per_order_below_ten(): void
+    public function test_organiser_cannot_create_or_update_tier_with_max_per_order_above_twenty(): void
     {
         $organiser = $this->makeOrganiser();
         $event = $this->makeEvent($organiser);
@@ -50,13 +50,13 @@ class OrganiserTicketTierValidationTest extends TestCase
             ->withSession($this->organiserSession($organiser))
             ->from(route('organiser.tiers.create', $event->id))
             ->post(route('organiser.tiers.store', $event->id), $this->makeTierPayload([
-                'max_per_order' => 9,
+                'max_per_order' => 21,
             ]));
 
         $createResponse->assertRedirect(route('organiser.tiers.create', $event->id));
         $createResponse->assertSessionHasErrors(['max_per_order']);
         $createResponse->assertSessionHas('errors', function ($errors) {
-            return $errors->first('max_per_order') === 'Max per order must be at least 20.';
+            return $errors->first('max_per_order') === 'Max per order must be maximum 20.';
         });
 
         $this->assertDatabaseCount('ticket_tiers', 0);
@@ -79,18 +79,102 @@ class OrganiserTicketTierValidationTest extends TestCase
             ->from(route('organiser.tiers.edit', [$event->id, $tier->id]))
             ->put(route('organiser.tiers.update', [$event->id, $tier->id]), $this->makeTierPayload([
                 'name' => 'Updated Admission',
-                'max_per_order' => 9,
+                'max_per_order' => 21,
             ]));
 
         $updateResponse->assertRedirect(route('organiser.tiers.edit', [$event->id, $tier->id]));
         $updateResponse->assertSessionHasErrors(['max_per_order']);
         $updateResponse->assertSessionHas('errors', function ($errors) {
-            return $errors->first('max_per_order') === 'Max per order must be at least 20.';
+            return $errors->first('max_per_order') === 'Max per order must be maximum 20.';
         });
 
         $tier->refresh();
 
         $this->assertSame('General Admission', $tier->name);
+        $this->assertSame(10, $tier->max_per_order);
+    }
+
+    public function test_organiser_cannot_create_or_update_tier_with_max_per_order_below_one(): void
+    {
+        $organiser = $this->makeOrganiser();
+        $event = $this->makeEvent($organiser);
+
+        $createResponse = $this
+            ->withSession($this->organiserSession($organiser))
+            ->from(route('organiser.tiers.create', $event->id))
+            ->post(route('organiser.tiers.store', $event->id), $this->makeTierPayload([
+                'max_per_order' => 0,
+            ]));
+
+        $createResponse->assertRedirect(route('organiser.tiers.create', $event->id));
+        $createResponse->assertSessionHasErrors(['max_per_order']);
+        $createResponse->assertSessionHas('errors', function ($errors) {
+            return $errors->first('max_per_order') === 'Max per order is invalid.';
+        });
+
+        $this->assertDatabaseCount('ticket_tiers', 0);
+
+        $tier = TicketTier::create([
+            'event_id' => $event->id,
+            'name' => 'General Admission',
+            'description' => 'Standard entry',
+            'price' => 25,
+            'total_quantity' => 100,
+            'available_quantity' => 100,
+            'min_per_order' => 1,
+            'max_per_order' => 10,
+            'is_active' => true,
+            'sort_order' => 0,
+        ]);
+
+        $updateResponse = $this
+            ->withSession($this->organiserSession($organiser))
+            ->from(route('organiser.tiers.edit', [$event->id, $tier->id]))
+            ->put(route('organiser.tiers.update', [$event->id, $tier->id]), $this->makeTierPayload([
+                'name' => 'Updated Admission',
+                'max_per_order' => -1,
+            ]));
+
+        $updateResponse->assertRedirect(route('organiser.tiers.edit', [$event->id, $tier->id]));
+        $updateResponse->assertSessionHasErrors(['max_per_order']);
+        $updateResponse->assertSessionHas('errors', function ($errors) {
+            return $errors->first('max_per_order') === 'Max per order is invalid.';
+        });
+
+        $tier->refresh();
+
+        $this->assertSame('General Admission', $tier->name);
+        $this->assertSame(10, $tier->max_per_order);
+    }
+
+    public function test_organiser_can_create_and_update_tier_with_max_per_order_between_one_and_twenty(): void
+    {
+        $organiser = $this->makeOrganiser();
+        $event = $this->makeEvent($organiser);
+
+        $createResponse = $this
+            ->withSession($this->organiserSession($organiser))
+            ->post(route('organiser.tiers.store', $event->id), $this->makeTierPayload([
+                'max_per_order' => 1,
+            ]));
+
+        $createResponse->assertRedirect(route('organiser.tiers.index', $event->id));
+
+        $tier = TicketTier::where('event_id', $event->id)->firstOrFail();
+        $this->assertSame(1, $tier->max_per_order);
+
+        $updateResponse = $this
+            ->withSession($this->organiserSession($organiser))
+            ->put(route('organiser.tiers.update', [$event->id, $tier->id]), $this->makeTierPayload([
+                'name' => 'VIP Updated',
+                'max_per_order' => 20,
+            ]));
+
+        $updateResponse->assertRedirect(route('organiser.tiers.index', $event->id));
+
+        $tier->refresh();
+
+        $this->assertSame('VIP Updated', $tier->name);
         $this->assertSame(20, $tier->max_per_order);
     }
 

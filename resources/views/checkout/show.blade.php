@@ -3,6 +3,7 @@
 
 @section('head')
 <script id="stripe-js" src="https://js.stripe.com/v3/"></script>
+@include('partials.checkout-transition-guard-head', ['reservationToken' => $reservation->token, 'processingUrl' => route('checkout.success', $reservation->token)])
 <style>
     #card-element {
         min-height: 52px;
@@ -370,6 +371,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const eventUrl   = @js($ticketSelectionUrl);
     const releaseUrl = '{{ route('reservation.release', $reservation->token) }}';
     const csrfToken  = document.querySelector('meta[name=csrf-token]').content;
+    const checkoutActiveTokenKey = 'ticketly:checkout-active-token';
+    const checkoutSuccessUrlKey = 'ticketly:checkout-success-url';
+    const checkoutCompleteTokenKey = 'ticketly:checkout-complete-token';
+    const checkoutCompleteRedirectKey = 'ticketly:checkout-complete-redirect';
     let stripe, elements, cardElement;
     let cardMounted = false;
     let intentReady = false;
@@ -945,6 +950,7 @@ document.addEventListener('DOMContentLoaded', function () {
             refreshPayButtonState();
 
             if (error) {
+                clearCheckoutTransitionState();
                 showError(error.message || 'Payment could not be processed. Please try again.');
                 hideProcessingOverlay();
                 lockPayButton = false;
@@ -953,11 +959,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'processing') {
-                window.location.replace(checkoutSuccessUrl);
+                await resolveSuccessfulPaymentRedirect();
                 return;
             }
 
             if (paymentIntent?.status === 'requires_payment_method' || paymentIntent?.status === 'canceled') {
+                clearCheckoutTransitionState();
                 showError('Payment could not be completed. Please check your card details and try again.');
                 hideProcessingOverlay();
                 lockPayButton = false;
@@ -965,13 +972,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            window.location.replace(checkoutSuccessUrl);
+            await resolveSuccessfulPaymentRedirect();
         } catch (e) {
             document.getElementById('pay-btn-text').classList.remove('hidden');
             document.getElementById('pay-spinner').classList.add('hidden');
             paymentInProgress = false;
             lockPayButton = false;
             refreshPayButtonState();
+            clearCheckoutTransitionState();
             hideProcessingOverlay();
             showError(e?.message || 'We could not confirm your payment right now. Please try again.');
         }
@@ -1013,6 +1021,90 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function hideProcessingOverlay() {
         document.getElementById('payment-processing-overlay')?.classList.add('hidden');
+    }
+
+    function getCheckoutTransitionItem(key) {
+        try {
+            return sessionStorage.getItem(key) || '';
+        } catch (error) {
+            return '';
+        }
+    }
+
+    function setCheckoutTransitionItem(key, value) {
+        try {
+            sessionStorage.setItem(key, value);
+        } catch (error) {
+            // Ignore storage access failures.
+        }
+    }
+
+    function removeCheckoutTransitionItem(key) {
+        try {
+            sessionStorage.removeItem(key);
+        } catch (error) {
+            // Ignore storage access failures.
+        }
+    }
+
+    function markCheckoutProcessingActive() {
+        setCheckoutTransitionItem(checkoutActiveTokenKey, '{{ $reservation->token }}');
+        setCheckoutTransitionItem(checkoutSuccessUrlKey, checkoutSuccessUrl);
+    }
+
+    function markCheckoutProcessingComplete(redirectUrl) {
+        markCheckoutProcessingActive();
+        setCheckoutTransitionItem(checkoutCompleteTokenKey, '{{ $reservation->token }}');
+        setCheckoutTransitionItem(checkoutCompleteRedirectKey, redirectUrl);
+    }
+
+    function clearCheckoutTransitionState() {
+        if (getCheckoutTransitionItem(checkoutActiveTokenKey) === '{{ $reservation->token }}') {
+            removeCheckoutTransitionItem(checkoutActiveTokenKey);
+        }
+        if (getCheckoutTransitionItem(checkoutCompleteTokenKey) === '{{ $reservation->token }}') {
+            removeCheckoutTransitionItem(checkoutCompleteTokenKey);
+        }
+        if (getCheckoutTransitionItem(checkoutSuccessUrlKey) === checkoutSuccessUrl) {
+            removeCheckoutTransitionItem(checkoutSuccessUrlKey);
+        }
+        removeCheckoutTransitionItem(checkoutCompleteRedirectKey);
+    }
+
+    async function resolveSuccessfulPaymentRedirect() {
+        markCheckoutProcessingActive();
+        showProcessingOverlay();
+
+        try {
+            const res = await fetch(statusUrl + '?attempt=1', { headers: { 'Accept': 'application/json' } });
+            const data = await res.json();
+
+            if (data.status === 'paid' && data.redirect) {
+                markCheckoutProcessingComplete(data.redirect);
+                window.location.replace(data.redirect);
+                return true;
+            }
+
+            if (data.status === 'failed') {
+                clearCheckoutTransitionState();
+                showError(data.message || 'Payment could not be completed. Please check your card details and try again.');
+                hideProcessingOverlay();
+                lockPayButton = false;
+                refreshPayButtonState();
+                return false;
+            }
+
+            if (data.status === 'expired') {
+                clearCheckoutTransitionState();
+                handleExpiry(data.message || 'Your hold has expired.', data.redirect_to);
+                return false;
+            }
+        } catch (error) {
+            // Fall back to the dedicated processing page.
+        }
+
+        window.location.replace(checkoutSuccessUrl);
+        return true;
     }
 
     function normalizeRedirect(redirectTo) {
@@ -1065,6 +1157,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (alertEl) alertEl.classList.remove('hidden');
 
         showError('Your hold expired. Payment is disabled and no payment will be taken.');
+        clearCheckoutTransitionState();
         releaseHoldSilently();
         setTimeout(() => { window.location.href = finalRedirect; }, 4000);
     }

@@ -7,7 +7,6 @@ use App\Models\Event;
 use App\Models\PromoCode;
 use App\Services\ServiceFeeCalculator;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class PromoCodeController extends Controller
 {
@@ -43,7 +42,7 @@ class PromoCodeController extends Controller
     {
         $organiser = $request->attributes->get('organiser');
 
-        $validated = $this->validatePromo($request);
+        $validated = $this->validatePromo($request, $organiser->id);
         $validated = $this->sanitizePromoPayload($validated, $organiser->id);
         $validated['organiser_id'] = $organiser->id;
 
@@ -93,7 +92,7 @@ class PromoCodeController extends Controller
                 ->withErrors(['promo' => 'Deleted promo codes cannot be edited.']);
         }
 
-        $validated = $this->validatePromo($request, $promo->id);
+        $validated = $this->validatePromo($request, $organiser->id, $promo->id);
         $validated = $this->sanitizePromoPayload($validated, $organiser->id);
 
         $promo->update($validated);
@@ -168,26 +167,25 @@ class PromoCodeController extends Controller
             'event_id' => 'nullable|integer',
         ]);
 
-        $promo = PromoCode::where('code', strtoupper($request->code))
-            ->where('is_active', true)
-            ->whereNull('deleted_at')
-            ->first();
+        $promo = null;
 
-        if ($promo && $request->filled('event_id')) {
+        if ($request->filled('event_id')) {
             $event = Event::select('id', 'organiser_id')->find($request->event_id);
-            $isApplicable = false;
+            $resolvedPromo = PromoCode::resolveForEvent($event, (string) $request->code);
 
-            if ($event) {
-                if ($promo->event_id) {
-                    $isApplicable = (int) $promo->event_id === (int) $event->id;
-                } elseif ($promo->organiser_id) {
-                    $isApplicable = (int) $promo->organiser_id === (int) $event->organiser_id;
-                }
+            if ($resolvedPromo['message']) {
+                return response()->json([
+                    'valid' => false,
+                    'message' => $resolvedPromo['message'],
+                ]);
             }
 
-            if (!$isApplicable) {
-                $promo = null;
-            }
+            $promo = $resolvedPromo['promo'];
+        } else {
+            $promo = PromoCode::query()
+                ->whereRaw('LOWER(code) = ?', [strtolower(trim((string) $request->code))])
+                ->where('is_active', true)
+                ->first();
         }
 
         if (!$promo || !$promo->isValid()) {
@@ -213,10 +211,20 @@ class PromoCodeController extends Controller
         ]);
     }
 
-    private function validatePromo(Request $request, ?int $ignoreId = null): array
+    private function validatePromo(Request $request, int $organiserId, ?int $ignoreId = null): array
     {
         return $request->validate([
-            'code'         => ['required', 'string', 'alpha_num', 'max:30', Rule::unique('promo_codes', 'code')->ignore($ignoreId)],
+            'code'         => [
+                'required',
+                'string',
+                'alpha_num',
+                'max:30',
+                function (string $attribute, mixed $value, \Closure $fail) use ($organiserId, $ignoreId): void {
+                    if (PromoCode::codeExistsForOrganiser($organiserId, (string) $value, $ignoreId)) {
+                        $fail('This promo code already exists for your account.');
+                    }
+                },
+            ],
             'type'         => 'required|in:percentage,fixed',
             'value'        => 'required|numeric|min:0.01',
             'max_discount' => 'nullable|numeric|min:0.01',

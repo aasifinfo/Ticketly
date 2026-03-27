@@ -13,6 +13,36 @@
   .admin-event-sponsor-name {
     color: #ffffff !important;
   }
+
+  .admin-event-description,
+  .admin-event-description * {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .admin-event-description {
+    min-width: 0;
+  }
+
+  .admin-event-description img,
+  .admin-event-description video,
+  .admin-event-description iframe,
+  .admin-event-description table,
+  .admin-event-description pre,
+  .admin-event-description code {
+    max-width: 100%;
+  }
+
+  .admin-event-description table {
+    display: block;
+    overflow-x: auto;
+    white-space: normal;
+  }
+
+  .admin-event-description pre {
+    white-space: pre-wrap;
+  }
 </style>
 @endsection
 
@@ -152,7 +182,7 @@
           <p class="text-sm text-gray-300 mb-3">{{ $event->short_description }}</p>
         @endif
         @if($event->description)
-          <div class="text-sm text-gray-300">{!! $event->description !!}</div>
+          <div class="admin-event-description text-sm text-gray-300">{!! $event->description !!}</div>
         @else
           <p class="text-sm text-gray-300">No description provided.</p>
         @endif

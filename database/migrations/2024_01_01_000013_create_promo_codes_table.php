@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('organiser_id')->constrained('organisers')->onDelete('cascade');
             $table->foreignId('event_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('code')->unique();
+            $table->string('code');
             $table->enum('type', ['percentage', 'fixed'])->default('percentage');
             $table->decimal('value', 8, 2);
             $table->decimal('max_discount', 10, 2)->nullable();
@@ -23,6 +23,7 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
 
+            $table->unique(['organiser_id', 'code'], 'promo_codes_organiser_id_code_unique');
             $table->index(['code', 'is_active']);
         });
     }

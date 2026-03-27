@@ -5,11 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', 'Admin') - Ticketly</title>
+@include('partials.protected-history-guard-head', ['guardNamespace' => 'admin', 'guardState' => session('admin_auth_state'), 'fallbackRedirect' => route('admin.login')])
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 @include('partials.theme-system-head')
+@include('partials.global-ticket-loader-head')
 <style>
   @media (max-width: 767px) {
     #admin-sidebar {
@@ -68,6 +70,7 @@
 @yield('head')
 </head>
 <body class="bg-gray-950 text-gray-100 @yield('body-class')">
+@include('partials.global-ticket-loader')
 
 <div class="flex h-screen overflow-hidden">
   <div id="admin-backdrop" onclick="closeAdminSidebar()" aria-hidden="true"></div>
@@ -145,7 +148,7 @@
           <div class="text-sm font-semibold text-white truncate">{{ $admin->name }}</div>
           <div class="text-xs text-gray-400 truncate">{{ $admin->email }}</div>
         </div>
-        <form action="{{ route('admin.logout') }}" method="POST" data-logout-guard data-logout-redirect="{{ route('organiser.login') }}">
+        <form action="{{ route('admin.logout') }}" method="POST" data-logout-guard data-logout-namespace="admin" data-logout-state="{{ session('admin_auth_state') }}" data-logout-redirect="{{ route('admin.login') }}">
           @csrf
           <button type="submit" class="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-gray-800 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
@@ -222,61 +225,8 @@
 
 @include('partials.theme-system-script')
 @include('partials.password-toggle-script')
+@include('partials.protected-history-guard-script', ['guardNamespace' => 'admin', 'guardState' => session('admin_auth_state'), 'fallbackRedirect' => route('admin.login')])
 <script>
-  (function () {
-    var logoutGuardKey = 'ticketly:logout-guard';
-    var logoutRedirectKey = 'ticketly:logout-redirect';
-    var fallbackRedirect = @json(route('organiser.login'));
-
-    function getRedirectUrl() {
-      try {
-        return sessionStorage.getItem(logoutRedirectKey) || fallbackRedirect;
-      } catch (error) {
-        return fallbackRedirect;
-      }
-    }
-
-    function clearLogoutGuard() {
-      try {
-        sessionStorage.removeItem(logoutGuardKey);
-        sessionStorage.removeItem(logoutRedirectKey);
-      } catch (error) {
-        // Ignore storage access failures.
-      }
-    }
-
-    function redirectIfRestoredAfterLogout() {
-      try {
-        if (sessionStorage.getItem(logoutGuardKey) !== '1') return;
-      } catch (error) {
-        return;
-      }
-
-      window.location.replace(getRedirectUrl());
-    }
-
-    document.addEventListener('submit', function (event) {
-      var form = event.target.closest('form[data-logout-guard]');
-      if (!form) return;
-
-      try {
-        sessionStorage.setItem(logoutGuardKey, '1');
-        sessionStorage.setItem(logoutRedirectKey, form.getAttribute('data-logout-redirect') || fallbackRedirect);
-      } catch (error) {
-        // Ignore storage access failures.
-      }
-    });
-
-    window.addEventListener('pageshow', function (event) {
-      if (event.persisted) {
-        redirectIfRestoredAfterLogout();
-        return;
-      }
-
-      clearLogoutGuard();
-    });
-  })();
-
   function toggleAdminSidebar() {
     var sidebar = document.getElementById('admin-sidebar');
     var backdrop = document.getElementById('admin-backdrop');
@@ -341,5 +291,6 @@
 </script>
 @yield('scripts')
 @include('partials.date-input-display')
+@include('partials.global-ticket-loader-script')
 </body>
 </html>

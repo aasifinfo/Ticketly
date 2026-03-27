@@ -70,6 +70,8 @@ class PreventBackHistoryMiddlewareTest extends TestCase
             ->get(route('admin.settings.index'));
 
         $response->assertOk();
+        $response->assertSee('ticketly-global-loader', false);
+        $response->assertSee("html[data-protected-history-hidden='1'][data-ticket-loader-visible='1'] body", false);
         $this->assertNoCacheHeaders($response);
     }
 
@@ -82,6 +84,8 @@ class PreventBackHistoryMiddlewareTest extends TestCase
             ->get(route('organiser.profile.show'));
 
         $response->assertOk();
+        $response->assertSee('ticketly-global-loader', false);
+        $response->assertSee("html[data-protected-history-hidden='1'][data-ticket-loader-visible='1'] body", false);
         $this->assertNoCacheHeaders($response);
     }
 
@@ -105,10 +109,35 @@ class PreventBackHistoryMiddlewareTest extends TestCase
     {
         $organiserLoginResponse = $this->get(route('organiser.login'));
         $organiserLoginResponse->assertOk();
-        $organiserLoginResponse->assertSee('ticketly:logout-guard', false);
+        $organiserLoginResponse->assertSee('var namespace = "organiser";', false);
+        $organiserLoginResponse->assertSee("var logoutStateKey = 'ticketly:' + namespace + ':logout-state';", false);
 
         $adminLoginResponse = $this->get(route('admin.login'));
         $adminLoginResponse->assertOk();
-        $adminLoginResponse->assertSee('ticketly:logout-guard', false);
+        $adminLoginResponse->assertSee('var namespace = "admin";', false);
+        $adminLoginResponse->assertSee("var logoutStateKey = 'ticketly:' + namespace + ':logout-state';", false);
+    }
+
+    public function test_logout_responses_are_not_cacheable(): void
+    {
+        $organiser = $this->makeOrganiser();
+        $token = 'logout-token';
+
+        $organiserResponse = $this
+            ->withSession(array_merge($this->organiserSession($organiser), ['organiser_auth_state' => 'organiser-state', '_token' => $token]))
+            ->post(route('organiser.logout'), ['_token' => $token]);
+
+        $organiserResponse->assertRedirect(route('organiser.login'));
+        $this->assertNoCacheHeaders($organiserResponse);
+
+        $admin = $this->makeAdmin();
+        $adminToken = 'admin-logout-token';
+
+        $adminResponse = $this
+            ->withSession(array_merge($this->adminSession($admin), ['admin_auth_state' => 'admin-state', '_token' => $adminToken]))
+            ->post(route('admin.logout'), ['_token' => $adminToken]);
+
+        $adminResponse->assertRedirect(route('admin.login'));
+        $this->assertNoCacheHeaders($adminResponse);
     }
 }

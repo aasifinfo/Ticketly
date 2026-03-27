@@ -72,9 +72,7 @@
         @enderror
       </div>
 
-      <div class="md:col-span-2 rounded-xl border border-gray-800 bg-gray-950/40 px-4 py-3 text-xs text-gray-400">
-        Match organiser validation window: ticket validation start and end are required here too.
-      </div>
+      
 
       <div>
         <label class="text-xs uppercase tracking-wider text-gray-400">Venue Name</label>

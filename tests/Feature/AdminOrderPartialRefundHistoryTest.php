@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Models\BookingItem;
 use App\Models\Event;
 use App\Models\Organiser;
+use App\Models\PromoCode;
 use App\Models\TicketTier;
 use App\Services\RefundService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -140,16 +141,83 @@ class AdminOrderPartialRefundHistoryTest extends TestCase
         $response->assertSee(ticketly_money(46), false);
         $response->assertSeeInOrder([
             'Refund 1',
-            ticketly_money(92),
-            ticketly_money(46),
-            ticketly_money(46),
-            'Customer requested second ticket refund',
-            'Refund 2',
             ticketly_money(138),
             ticketly_money(46),
             ticketly_money(92),
             'Customer requested first ticket refund',
+            'Refund 2',
+            ticketly_money(92),
+            ticketly_money(46),
+            ticketly_money(46),
+            'Customer requested second ticket refund',
         ], false);
+    }
+
+    public function test_partial_refund_with_promo_code_uses_proportional_paid_amount_without_recalculating_discount(): void
+    {
+        $admin = $this->makeAdmin(['email' => 'refund.admin+promo@example.com']);
+        $organiser = $this->makeOrganiser([
+            'email' => 'refund.organiser+promo@example.com',
+            'phone' => '07123456780',
+        ]);
+        $event = $this->makeEvent($organiser, ['slug' => 'refund-event-promo']);
+        $tier = $this->makeTicketTier($event, ['available_quantity' => 97]);
+        $promo = $this->makePromoCode($organiser, $event, ['code' => 'PROMO30']);
+
+        $booking = Booking::create([
+            'reference' => 'TKT-REFPROMO1',
+            'event_id' => $event->id,
+            'promo_code_id' => $promo->id,
+            'customer_name' => 'Promo Customer',
+            'customer_email' => 'promo.customer@example.com',
+            'customer_phone' => '07123456789',
+            'subtotal' => 120,
+            'discount_amount' => 30,
+            'portal_fee' => 12,
+            'service_fee' => 6,
+            'total' => 108,
+            'currency' => 'GBP',
+            'status' => 'paid',
+            'stripe_payment_intent_id' => 'pi_test_refund_promo',
+        ]);
+
+        $item = BookingItem::create([
+            'booking_id' => $booking->id,
+            'ticket_tier_id' => $tier->id,
+            'quantity' => 3,
+            'unit_price' => 40,
+            'subtotal' => 120,
+        ]);
+
+        $response = $this->withSession($this->adminSession($admin))->post(route('admin.orders.partial-cancel', $booking->id), [
+            'booking_item_id' => $item->id,
+            'refund_quantity' => 1,
+            'refund_reason' => 'Promo booking refund',
+        ]);
+
+        $response->assertRedirect();
+
+        $booking->refresh();
+        $item->refresh();
+        $tier->refresh();
+
+        $this->assertSame('partially_refunded', $booking->status);
+        $this->assertSame('36.00', $booking->refund_amount);
+        $this->assertSame('80.00', $booking->subtotal);
+        $this->assertSame('30.00', $booking->discount_amount);
+        $this->assertSame('12.00', $booking->portal_fee);
+        $this->assertSame('6.00', $booking->service_fee);
+        $this->assertSame('72.00', $booking->total);
+        $this->assertSame(2, $item->quantity);
+        $this->assertSame(98, $tier->available_quantity);
+
+        $this->assertDatabaseHas('booking_refunds', [
+            'booking_id' => $booking->id,
+            'original_total' => '108.00',
+            'refunded_amount' => '36.00',
+            'remaining_total' => '72.00',
+            'reason' => 'Promo booking refund',
+        ]);
     }
 
     private function makeAdmin(array $overrides = []): Admin
@@ -212,6 +280,22 @@ class AdminOrderPartialRefundHistoryTest extends TestCase
             'max_per_order' => 10,
             'is_active' => true,
             'sort_order' => 0,
+        ], $overrides));
+    }
+
+    private function makePromoCode(Organiser $organiser, Event $event, array $overrides = []): PromoCode
+    {
+        return PromoCode::create(array_merge([
+            'organiser_id' => $organiser->id,
+            'event_id' => $event->id,
+            'code' => 'PROMO10',
+            'type' => 'fixed',
+            'value' => 30,
+            'max_discount' => null,
+            'max_uses' => 50,
+            'used_count' => 1,
+            'is_active' => true,
+            'expires_at' => now()->addDays(10),
         ], $overrides));
     }
 
