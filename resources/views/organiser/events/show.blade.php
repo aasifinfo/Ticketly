@@ -235,7 +235,7 @@
                   class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500" placeholder="Please explain why this event is being cancelled..."></textarea>
       </div>
       <div class="flex gap-3">
-        <button type="submit" class="flex-1 bg-red-700 hover:bg-red-600 text-white font-bold py-3 rounded-xl text-sm transition-colors">Confirm Cancellation</button>
+        <button type="submit" class="flex-1 bg-red-700 hover:bg-red-600 text-white font-bold py-3 rounded-xl text-sm transition-colors" style="color:#ffffff !important;">Confirm Cancellation</button>
         <button type="button" onclick="document.getElementById('cancel-modal').classList.add('hidden')" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 rounded-xl text-sm transition-colors">Go Back</button>
       </div>
     </form>

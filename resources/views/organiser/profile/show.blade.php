@@ -133,7 +133,7 @@
       <div class="flex items-center gap-3">
         <input type="text" name="confirm_delete" placeholder='Type DELETE to confirm'
                class="bg-gray-800 border border-red-900/50 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500 w-52" required>
-        <button type="submit" class="px-5 py-2.5 text-sm font-bold text-white bg-red-700 hover:bg-red-600 rounded-xl transition-colors">Delete Account</button>
+        <button type="submit" class="px-5 py-2.5 text-sm font-bold text-white bg-red-700 hover:bg-red-600 rounded-xl transition-colors" style="color:#ffffff !important;">Delete Account</button>
       </div>
     </form>
   </div>

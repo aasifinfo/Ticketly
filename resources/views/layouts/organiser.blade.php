@@ -362,6 +362,7 @@
 </div>
 
 @include('partials.theme-system-script')
+@include('partials.password-toggle-script')
 <script>
   (function () {
     var logoutGuardKey = 'ticketly:logout-guard';

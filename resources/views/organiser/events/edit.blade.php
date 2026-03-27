@@ -1283,7 +1283,7 @@
       </div>
       <div class="event-actions">
         <button type="button" onclick="document.getElementById('cancel-modal').classList.add('hidden')" class="event-secondary-btn">Go Back</button>
-        <button type="submit" class="event-primary-btn" style="background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:none;">Confirm Cancellation</button>
+        <button type="submit" class="event-primary-btn" style="background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:none;color:#ffffff !important;">Confirm Cancellation</button>
       </div>
     </form>
   </div>

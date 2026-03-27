@@ -124,6 +124,53 @@
     transform: translateY(-1px);
   }
 
+  .password-toggle-field {
+    position: relative;
+    display: block;
+    width: 100%;
+  }
+
+  .password-toggle-field > input {
+    padding-right: 3rem !important;
+  }
+
+  .password-toggle-button {
+    position: absolute;
+    top: 50%;
+    right: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 9999px;
+    background: transparent !important;
+    color: var(--text-4);
+    cursor: pointer;
+    transform: translateY(-50%);
+    transition: color 0.2s ease;
+  }
+
+  .password-toggle-button:hover {
+    background: transparent !important;
+    color: var(--text-primary) !important;
+    transform: translateY(-50%);
+    box-shadow: none !important;
+  }
+
+  .password-toggle-button:focus-visible {
+    outline: 2px solid var(--brand-500);
+    outline-offset: 2px;
+  }
+
+  .password-toggle-button svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    pointer-events: none;
+  }
+
   :root[data-theme='light'] body {
     background-image:
       /* radial-gradient(circle at 10% -10%, rgba(99, 102, 241, 0.11), transparent 40%),
@@ -364,8 +411,8 @@
   }
 
   @media (max-width: 768px) {
-    :root[data-theme='light'] .theme-toggle { padding: 0.45rem 0.65rem; font-size: 0.7rem; }
-    :root[data-theme='light'] article.group.bg-gray-900:hover { transform: translateY(-3px); }
+  :root[data-theme='light'] .theme-toggle { padding: 0.45rem 0.65rem; font-size: 0.7rem; }
+  :root[data-theme='light'] article.group.bg-gray-900:hover { transform: translateY(-3px); }
   }
 
   @media (max-width: 640px) {
@@ -373,5 +420,17 @@
     :root[data-theme='light'] main h1.text-4xl {
       font-size: 1.85rem !important;
     }
+  }
+
+  :root[data-theme='light'] [class*='hover:bg-']:hover:not(.password-toggle-button),
+  :root[data-theme='light'] .theme-toggle:hover,
+  :root[data-theme='light'] .admin-link:hover,
+  :root[data-theme='light'] .sidebar-link:hover,
+  :root[data-theme='light'] article.group:hover,
+  :root[data-theme='light'] a.group:hover,
+  :root[data-theme='light'] .kpi-card:hover,
+  :root[data-theme='light'] [role='menuitem']:hover {
+    background-color: #f3f3f3 !important;
+    background-image: none !important;
   }
 </style>

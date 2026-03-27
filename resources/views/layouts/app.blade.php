@@ -129,6 +129,7 @@
 @if($allowPublicThemeToggle)
 @include('partials.theme-system-script')
 @endif
+@include('partials.password-toggle-script')
 <script>
   (function () {
     var toggle = document.getElementById('mobile-menu-toggle');

@@ -24,14 +24,14 @@
           <div>
             <h3 class="mb-3 text-xs font-bold uppercase tracking-wide text-gray-400">Category</h3>
             <div class="space-y-2" role="group" aria-label="Filter by category">
-              <label class="flex cursor-pointer items-start gap-2">
+              <label class="flex w-full cursor-pointer items-center gap-2.5">
                 <input type="radio" name="category" value="" {{ !request('category') ? 'checked' : '' }} class="text-indigo-600">
-                <span class="text-sm leading-5 text-gray-300">All Categories</span>
+                <span class="min-w-0 flex-1 truncate text-sm leading-5 text-gray-300">All Categories</span>
               </label>
               @foreach($categories as $cat => $count)
-              <label class="flex cursor-pointer items-start gap-2">
+              <label class="flex w-full cursor-pointer items-center gap-2.5" title="{{ $cat }} ({{ $count }})">
                 <input type="radio" name="category" value="{{ $cat }}" {{ request('category') === $cat ? 'checked' : '' }} class="text-indigo-600">
-                <span class="break-words text-sm leading-5 text-gray-300">{{ $cat }} <span class="text-gray-600">({{ $count }})</span></span>
+                <span class="min-w-0 flex-1 truncate text-sm leading-5 text-gray-300">{{ $cat }} <span class="text-gray-600">({{ $count }})</span></span>
               </label>
               @endforeach
             </div>
