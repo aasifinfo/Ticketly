@@ -106,6 +106,13 @@ class EventController extends Controller
 
     public function show(Request $request, string $slug)
     {
+        if ($this->hasTicketScanParameters($request)) {
+            return redirect()->route('events.show', array_merge(
+                ['slug' => $slug],
+                $this->cleanEventQueryParameters($request)
+            ));
+        }
+
         $event = Event::with([
                 'ticketTiers' => fn($q) => $q->where('is_active', true)->orderBy('price'),
                 'organiser',
@@ -156,5 +163,20 @@ class EventController extends Controller
             ->get();
 
         return view('events.show', compact('event', 'relatedEvents', 'activeReservation', 'selectedTicketItems'));
+    }
+
+    private function hasTicketScanParameters(Request $request): bool
+    {
+        return $request->filled('ticket_uuid')
+            || $request->filled('booking_reference')
+            || $request->filled('reference')
+            || $request->filled('data');
+    }
+
+    private function cleanEventQueryParameters(Request $request): array
+    {
+        return collect($request->query())
+            ->except(['ticket_uuid', 'booking_reference', 'reference', 'data'])
+            ->all();
     }
 }

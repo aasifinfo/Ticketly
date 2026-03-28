@@ -212,7 +212,11 @@
 
     try {
       const url = new URL(text, window.location.origin);
-      if (/^\/events\/[^/]+/i.test(url.pathname)) {
+      const isSameOrigin = url.origin === window.location.origin;
+      const isEventPage = /^\/events\/[^/]+/i.test(url.pathname);
+      const isTicketScanRoute = /^\/tickets\/scan$/i.test(url.pathname);
+
+      if (isSameOrigin && (isEventPage || isTicketScanRoute)) {
         return url.toString();
       }
     } catch (error) {

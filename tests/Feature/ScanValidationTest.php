@@ -38,6 +38,16 @@ class ScanValidationTest extends TestCase
         $response->assertSee('Validation access disabled');
     }
 
+    public function test_guest_can_open_ticket_qr_url_and_get_redirected_to_event_page(): void
+    {
+        $booking = $this->createBookingForEvent();
+        $qrUrl = app(\App\Services\TicketQrCodeService::class)->payloadForBooking($booking);
+
+        $response = $this->get($qrUrl);
+
+        $response->assertRedirect(route('events.show', $booking->event->slug));
+    }
+
     public function test_guest_cannot_validate_ticket_via_scan_api(): void
     {
         $booking = $this->createBookingForEvent();
@@ -85,11 +95,33 @@ class ScanValidationTest extends TestCase
         $this->assertNotNull($booking->scanned_at);
     }
 
-    public function test_organiser_can_validate_ticket_from_encoded_qr_payload(): void
+    public function test_organiser_can_validate_ticket_from_qr_redirect_url(): void
     {
         Carbon::setTestNow(Carbon::create(2026, 3, 23, 18, 5, 0, 'Asia/Kolkata'));
         $booking = $this->createBookingForEvent();
         $qrPayload = app(\App\Services\TicketQrCodeService::class)->payloadForBooking($booking);
+
+        $response = $this
+            ->withSession($this->organiserSession($booking->event->organiser))
+            ->postJson('/api/scan-ticket', [
+                'qr_code' => $qrPayload,
+            ]);
+
+        $response->assertOk()
+            ->assertJson([
+                'status' => 'success',
+                'type' => 'green',
+                'code' => 'verified',
+                'ticket_uuid' => $booking->ticket_uuid,
+                'booking_reference' => $booking->reference,
+            ]);
+    }
+
+    public function test_organiser_can_validate_ticket_from_encoded_qr_payload(): void
+    {
+        Carbon::setTestNow(Carbon::create(2026, 3, 23, 18, 10, 0, 'Asia/Kolkata'));
+        $booking = $this->createBookingForEvent();
+        $qrPayload = app(\App\Services\TicketQrCodeService::class)->encodedPayloadForBooking($booking);
 
         $response = $this
             ->withSession($this->organiserSession($booking->event->organiser))

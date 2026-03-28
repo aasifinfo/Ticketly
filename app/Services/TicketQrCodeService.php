@@ -9,6 +9,11 @@ class TicketQrCodeService
 {
     public function payloadForBooking(Booking $booking): string
     {
+        return $this->publicEventUrlForBooking($booking);
+    }
+
+    public function encodedPayloadForBooking(Booking $booking): string
+    {
         $booking->loadMissing('event');
 
         return $this->encodePayload([
@@ -18,6 +23,17 @@ class TicketQrCodeService
             'ticket_uuid' => $booking->ticket_uuid,
             'booking_reference' => $booking->reference,
             'event_url' => route('events.show', $booking->event->slug),
+        ]);
+    }
+
+    public function publicEventUrlForBooking(Booking $booking): string
+    {
+        $booking->loadMissing('event');
+
+        return route('events.show', [
+            'slug' => $booking->event->slug,
+            'ticket_uuid' => $booking->ticket_uuid,
+            'booking_reference' => $booking->reference,
         ]);
     }
 

@@ -51,13 +51,12 @@ class BookingTicketPdfTest extends TestCase
         $this->assertStringNotContainsString(rawurlencode($booking->customer_name), $qrRequestUrl);
 
         parse_str((string) parse_url($qrRequestUrl, PHP_URL_QUERY), $query);
-        $payload = $this->decodeQrPayload((string) ($query['data'] ?? ''));
+        $scanUrl = (string) ($query['data'] ?? '');
+        $this->assertSame(route('events.show', $booking->event->slug), strtok($scanUrl, '?'));
 
-        $this->assertSame($booking->id, $payload['booking_id'] ?? null);
-        $this->assertSame($booking->event_id, $payload['event_id'] ?? null);
-        $this->assertSame($booking->ticket_uuid, $payload['ticket_uuid'] ?? null);
-        $this->assertSame($booking->reference, $payload['booking_reference'] ?? null);
-        $this->assertSame(route('events.show', $booking->event->slug), $payload['event_url'] ?? null);
+        parse_str((string) parse_url($scanUrl, PHP_URL_QUERY), $scanQuery);
+        $this->assertSame($booking->ticket_uuid, $scanQuery['ticket_uuid'] ?? null);
+        $this->assertSame($booking->reference, $scanQuery['booking_reference'] ?? null);
     }
 
     private function makePaidBooking(string $customerName): Booking
@@ -131,20 +130,5 @@ class BookingTicketPdfTest extends TestCase
         ]);
 
         return $booking;
-    }
-
-    private function decodeQrPayload(string $payload): array
-    {
-        $normalized = strtr($payload, '-_', '+/');
-        $padding = strlen($normalized) % 4;
-        if ($padding !== 0) {
-            $normalized .= str_repeat('=', 4 - $padding);
-        }
-
-        $decoded = base64_decode($normalized, true);
-
-        return is_string($decoded)
-            ? (json_decode($decoded, true) ?: [])
-            : [];
     }
 }

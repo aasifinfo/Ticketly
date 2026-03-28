@@ -6,6 +6,7 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\TicketScanController;
 use App\Http\Controllers\Organiser\AuthController as OrganiserAuthController;
 use App\Http\Controllers\Organiser\DashboardController;
 use App\Http\Controllers\Organiser\AnalyticsController;
@@ -33,6 +34,7 @@ use App\Http\Controllers\Admin\EmailLogController as AdminEmailLogController;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/events', [EventController::class, 'index'])->name('events.index');
 Route::get('/events/{slug}', [EventController::class, 'show'])->name('events.show');
+Route::get('/tickets/scan', [TicketScanController::class, 'show'])->name('tickets.scan.show');
 Route::get('/organiser/scan', [ScanController::class, 'index'])->name('organiser.scan.index');
 
 // ── Reservation & Checkout ───────────────────────────────────────────────────
