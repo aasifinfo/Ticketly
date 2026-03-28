@@ -43,7 +43,7 @@
     $interestedCount = max(1200, (int) $event->ticketTiers->sum('sold_quantity') * 8);
 @endphp
 
-<div class="bg-[#ffffff] text-slate-900">
+<div class="event-page-shell bg-[#ffffff] text-slate-900">
     <section class="relative overflow-hidden">
         <div class="absolute inset-0 bg-cover bg-center" style="background-image:url('{{ $heroImage }}');"></div>
         <div class="absolute inset-0"></div>
@@ -82,7 +82,7 @@
     </section>
 
     <div class="relative z-10 -mt-10 pb-14 sm:-mt-16 sm:pb-20">
-        <div class="mx-auto max-w-[1440px] px-2 sm:px-4 lg:px-4">
+        <div class="event-page-container mx-auto max-w-[1440px] px-2 sm:px-4 lg:px-4">
             @if($errors->any())
                 <div class="mb-6 rounded-[22px] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700 shadow-[0_20px_45px_rgba(239,68,68,0.08)]">
                     @foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach
@@ -267,7 +267,7 @@
                     @endif
                 </div>
 
-                <aside class="lg:sticky lg:top-24" style="width : 25rem">
+                <aside class="w-full lg:sticky lg:top-24 lg:w-[25rem]">
                     @if($event->isCancelled())
                         <div class="rounded-[24px] border border-red-200 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-6"><h2 class="text-[1.55rem] font-bold tracking-[-0.03em] text-slate-900 sm:text-[2rem]">Event Unavailable</h2><p class="mt-4 text-[1rem] leading-7 text-slate-500">{{ $event->cancellation_reason ?: 'This event has been cancelled by the organiser.' }}</p></div>
                     @elseif($event->starts_at->isPast())
@@ -305,22 +305,22 @@
                                         @endphp
                                         <div id="tier-card-{{ $tier->id }}" class="rounded-[18px] border bg-white p-4 transition {{ $soldOut ? 'border-slate-200 opacity-60' : ($initialQty > 0 ? 'border-violet-500 shadow-[0_0_0_3px_rgba(124,58,237,0.08)]' : 'border-slate-200') }}">
                                             <div class="space-y-2">
-                                                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                                    <div class="min-w-0 flex-1">
+                                                <div class="event-ticket-row flex items-start justify-between gap-[10px]">
+                                                    <div class="min-w-0 flex-1 pr-2">
                                                         <h3 class="truncate text-[1.02rem] font-semibold text-slate-900">
                                                             {{ $tier->name }}
                                                         </h3>
                                                     </div>
                                                     @if(!$soldOut)
-                                                        <div class="flex items-center gap-3 self-start sm:ml-4">
-                                                            <button type="button" onclick="changeQty({{ $tier->id }}, -1)" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-lg font-medium text-slate-500 hover:bg-slate-50">-</button>
-                                                            <span id="qty-display-{{ $tier->id }}" class="w-5 text-center text-[1.05rem] font-medium text-slate-900">{{ $initialQty }}</span>
-                                                            <button type="button" onclick="changeQty({{ $tier->id }}, 1)" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-lg font-medium text-slate-900 hover:bg-slate-50">+</button>
+                                                        <div class="event-ticket-controls flex shrink-0 items-center gap-[10px] self-start whitespace-nowrap sm:ml-4">
+                                                            <button type="button" onclick="changeQty({{ $tier->id }}, -1)" class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-lg font-medium text-slate-500 hover:bg-slate-50">-</button>
+                                                            <span id="qty-display-{{ $tier->id }}" class="w-5 shrink-0 text-center text-[1.05rem] font-medium text-slate-900">{{ $initialQty }}</span>
+                                                            <button type="button" onclick="changeQty({{ $tier->id }}, 1)" class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-lg font-medium text-slate-900 hover:bg-slate-50">+</button>
                                                         </div>
                                                         <input type="hidden" name="items[{{ $loop->index }}][ticket_tier_id]" value="{{ $tier->id }}">
                                                         <input type="hidden" name="items[{{ $loop->index }}][quantity]" id="qty-{{ $tier->id }}" data-max="{{ $maxSelect }}" value="{{ $initialQty }}">
                                                     @else
-                                                        <div class="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500">Sold Out</div>
+                                                        <div class="shrink-0 self-start rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500">Sold Out</div>
                                                         <input type="hidden" name="items[{{ $loop->index }}][ticket_tier_id]" value="{{ $tier->id }}">
                                                         <input type="hidden" name="items[{{ $loop->index }}][quantity]" id="qty-{{ $tier->id }}" data-max="0" value="0">
                                                     @endif
@@ -361,6 +361,35 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('head')
+<style>
+    body {
+        overflow-x: hidden;
+    }
+
+    @media (max-width: 639px) {
+        .event-page-container {
+            max-width: 100%;
+        }
+
+        .event-ticket-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .event-ticket-controls {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: nowrap;
+            flex-shrink: 0;
+        }
+    }
+</style>
 @endsection
 
 @section('scripts')

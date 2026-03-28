@@ -496,6 +496,7 @@
     }
 
     .events-item {
+      position: relative;
       grid-template-columns: 1fr;
       gap: 1rem;
       padding: 1rem;
@@ -508,16 +509,22 @@
     }
 
     .events-item__actions {
-      position: static;
-      justify-self: start;
+      position: absolute;
+      top: 1.75rem;
+      right: 1.75rem;
+      grid-column: auto;
+      align-self: start;
+      justify-self: auto;
+      z-index: 25;
     }
 
     .events-menu {
-      top: auto;
+      top: 3.45rem;
       bottom: auto;
-      left: 0;
-      right: auto;
-      min-width: min(16.5rem, calc(100vw - 2rem));
+      left: auto;
+      right: 0;
+      min-width: min(16.5rem, calc(100vw - 2.5rem));
+      max-width: calc(100vw - 2.5rem);
     }
 
     .events-item__stats {
