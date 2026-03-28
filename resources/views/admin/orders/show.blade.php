@@ -23,6 +23,13 @@
 @php
   $portalFeePercentage = ticketly_format_percentage(ticketly_setting('portal_fee_percentage', config('ticketly.portal_fee_percentage', 10)));
   $serviceFeePercentage = ticketly_format_percentage(ticketly_setting('service_fee_percentage', config('ticketly.service_fee_percentage', 5)));
+  $promoDiscountLabel = 'Discount';
+  if ($booking->promoCode) {
+    $promoValue = $booking->promoCode->type === 'percentage'
+      ? ticketly_format_percentage($booking->promoCode->value) . '%'
+      : ticketly_money($booking->promoCode->value);
+    $promoDiscountLabel .= ' (' . $booking->promoCode->code . ' - ' . $promoValue . ')';
+  }
 @endphp
 <div class="grid gap-6">
   <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
@@ -101,9 +108,7 @@
     $remainingTotal = $hasRefund
       ? max((float) $refundTransactions->first()->remaining_total, 0)
       : max((float) $booking->total, 0);
-    $refundStatus = $booking->isFullyRefunded()
-      ? 'Full refund'
-      : ($booking->isPartiallyRefunded() ? 'Partial refund' : ucfirst($booking->status));
+    $refundStatus = 'No Refund';
   @endphp
   <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
     <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
@@ -123,7 +128,7 @@
         </div>
         @if(($booking->discount_amount ?? 0) > 0)
         <div class="flex items-center justify-between text-gray-300">
-          <span>Discount</span>
+          <span>{{ $promoDiscountLabel }}</span>
           <span>-{{ ticketly_money($booking->discount_amount) }}</span>
         </div>
         @endif

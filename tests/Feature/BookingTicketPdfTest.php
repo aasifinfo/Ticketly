@@ -18,6 +18,16 @@ class BookingTicketPdfTest extends TestCase
 
     public function test_ticket_pdf_still_generates_when_customer_name_contains_an_apostrophe(): void
     {
+        $this->assertTicketPdfGeneratesForCustomerName("Kevin O'Leary");
+    }
+
+    public function test_ticket_pdf_still_generates_when_customer_name_contains_a_dot(): void
+    {
+        $this->assertTicketPdfGeneratesForCustomerName('Charles Jr.');
+    }
+
+    private function assertTicketPdfGeneratesForCustomerName(string $customerName): void
+    {
         $qrRequestUrl = null;
 
         Http::fake([
@@ -30,7 +40,7 @@ class BookingTicketPdfTest extends TestCase
             },
         ]);
 
-        $booking = $this->makePaidBooking("Conan O' Brien");
+        $booking = $this->makePaidBooking($customerName);
 
         $response = $this->get(route('booking.ticket.pdf', $booking->reference));
 
@@ -38,9 +48,16 @@ class BookingTicketPdfTest extends TestCase
         $response->assertHeader('Content-Type', 'application/pdf');
         $this->assertStringStartsWith('%PDF-', $response->getContent());
         $this->assertNotNull($qrRequestUrl);
-        $this->assertStringContainsString(rawurlencode($booking->ticket_uuid), $qrRequestUrl);
-        $this->assertStringContainsString(rawurlencode($booking->reference), $qrRequestUrl);
         $this->assertStringNotContainsString(rawurlencode($booking->customer_name), $qrRequestUrl);
+
+        parse_str((string) parse_url($qrRequestUrl, PHP_URL_QUERY), $query);
+        $payload = $this->decodeQrPayload((string) ($query['data'] ?? ''));
+
+        $this->assertSame($booking->id, $payload['booking_id'] ?? null);
+        $this->assertSame($booking->event_id, $payload['event_id'] ?? null);
+        $this->assertSame($booking->ticket_uuid, $payload['ticket_uuid'] ?? null);
+        $this->assertSame($booking->reference, $payload['booking_reference'] ?? null);
+        $this->assertSame(route('events.show', $booking->event->slug), $payload['event_url'] ?? null);
     }
 
     private function makePaidBooking(string $customerName): Booking
@@ -114,5 +131,20 @@ class BookingTicketPdfTest extends TestCase
         ]);
 
         return $booking;
+    }
+
+    private function decodeQrPayload(string $payload): array
+    {
+        $normalized = strtr($payload, '-_', '+/');
+        $padding = strlen($normalized) % 4;
+        if ($padding !== 0) {
+            $normalized .= str_repeat('=', 4 - $padding);
+        }
+
+        $decoded = base64_decode($normalized, true);
+
+        return is_string($decoded)
+            ? (json_decode($decoded, true) ?: [])
+            : [];
     }
 }

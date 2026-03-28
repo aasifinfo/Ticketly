@@ -4,19 +4,19 @@
 @section('content')
 @php
     $eventImage = $booking->event->banner_url ?: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&h=400&fit=crop';
-    $eventDate = ticketly_format_date($booking->event->starts_at);
-    $eventTime = ticketly_format_time($booking->event->starts_at) . ($booking->event->ends_at ? ' - ' . ticketly_format_time($booking->event->ends_at) : '');
+    $eventStartsAt = $booking->event->starts_at;
+    $eventEndsAt = $booking->event->ends_at;
+    $isMultiDayEvent = $eventEndsAt && ! $eventStartsAt->isSameDay($eventEndsAt);
+    $eventDate = ticketly_format_date($eventStartsAt);
+    $eventTime = ticketly_format_time($eventStartsAt) . ($eventEndsAt ? ' - ' . ticketly_format_time($eventEndsAt) : '');
+    $eventStartDisplay = ticketly_format_compact_datetime($eventStartsAt);
+    $eventEndDisplay = ticketly_format_compact_datetime($eventEndsAt);
     $eventLocation = collect([$booking->event->venue_name, $booking->event->city])->filter()->implode(', ');
     $portalFeePercentage = ticketly_format_percentage(ticketly_setting('portal_fee_percentage', config('ticketly.portal_fee_percentage', 10)));
     $serviceFeePercentage = ticketly_format_percentage(ticketly_setting('service_fee_percentage', config('ticketly.service_fee_percentage', 5)));
     $refundPolicyText = trim((string) $booking->event->refund_policy) !== ''
         ? $booking->event->refund_policy
         : 'Free cancellation up to 24h before event';
-    $qrPayload = route('events.show', [
-        'slug' => $booking->event->slug,
-        'ticket_uuid' => $booking->ticket_uuid,
-        'booking_reference' => $booking->reference,
-    ]);
 @endphp
 
 <main id="main-content" class="min-h-screen bg-[#ffffff] px-4 py-8 sm:py-10">
@@ -48,7 +48,14 @@
                             <rect x="3.5" y="5.5" width="17" height="15" rx="2.5" stroke-width="1.8"></rect>
                             <path d="M7 3.5v4M17 3.5v4M3.5 10.5h17" stroke-width="1.8" stroke-linecap="round"></path>
                         </svg>
-                        <span>{{ $eventDate }} &middot; {{ $eventTime }}</span>
+                        @if($isMultiDayEvent)
+                            <div class="space-y-1">
+                                <p>Start: {{ $eventStartDisplay }}</p>
+                                <p>End: {{ $eventEndDisplay }}</p>
+                            </div>
+                        @else
+                            <span>{{ $eventDate }} &middot; {{ $eventTime }}</span>
+                        @endif
                     </div>
                     <div class="flex items-center gap-2.5">
                         <svg class="h-5 w-5 text-violet-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
@@ -116,7 +123,7 @@
 
                 <div class="mx-auto mt-5 w-[170px] rounded-2xl bg-white p-3 shadow-[0_6px_18px_rgba(15,23,42,0.14)]">
                     <img
-                        src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ urlencode($qrPayload) }}"
+                        src="{{ $qrImageSrc }}"
                         alt="QR code for booking reference {{ $booking->reference }}"
                         class="h-full w-full rounded-lg"
                         loading="lazy"

@@ -4,15 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Services\PdfTicketService;
+use App\Services\TicketQrCodeService;
 use Illuminate\Http\Response;
 
 class BookingController extends Controller
 {
-    public function show(string $reference)
+    public function show(string $reference, TicketQrCodeService $ticketQrCodeService)
     {
         $booking = $this->findPaidBooking($reference);
+        $qrPayload = $ticketQrCodeService->payloadForBooking($booking);
+        $qrImageSrc = $ticketQrCodeService->imageUrlForPayload($qrPayload);
 
-        return view('booking.show', compact('booking'));
+        return view('booking.show', compact('booking', 'qrImageSrc'));
     }
 
     public function ticketPdf(string $reference, PdfTicketService $pdf): Response

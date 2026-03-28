@@ -9,10 +9,15 @@ class TicketQrCodeService
 {
     public function payloadForBooking(Booking $booking): string
     {
-        return route('events.show', [
-            'slug' => $booking->event->slug,
+        $booking->loadMissing('event');
+
+        return $this->encodePayload([
+            'version' => 1,
+            'booking_id' => $booking->id,
+            'event_id' => $booking->event_id,
             'ticket_uuid' => $booking->ticket_uuid,
             'booking_reference' => $booking->reference,
+            'event_url' => route('events.show', $booking->event->slug),
         ]);
     }
 
@@ -57,5 +62,39 @@ class TicketQrCodeService
         }
 
         return 'data:' . ($contentType ?: 'image/png') . ';base64,' . base64_encode($body);
+    }
+
+    public function encodePayload(array $payload): string
+    {
+        try {
+            $json = json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+        } catch (\JsonException) {
+            return '';
+        }
+
+        return rtrim(strtr(base64_encode($json), '+/', '-_'), '=');
+    }
+
+    public function decodePayload(string $payload): ?array
+    {
+        $value = trim($payload);
+        if ($value === '') {
+            return null;
+        }
+
+        $normalized = strtr($value, '-_', '+/');
+        $padding = strlen($normalized) % 4;
+        if ($padding !== 0) {
+            $normalized .= str_repeat('=', 4 - $padding);
+        }
+
+        $decoded = base64_decode($normalized, true);
+        if ($decoded === false) {
+            return null;
+        }
+
+        $data = json_decode($decoded, true);
+
+        return is_array($data) ? $data : null;
     }
 }

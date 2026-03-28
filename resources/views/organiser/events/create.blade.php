@@ -1019,7 +1019,7 @@
   <div class="event-grid">
     <div class="event-field">
       <label class="event-label">Parking / Transport Info <span class="event-inline-note">(optional)</span></label>
-      <textarea name="parking_info" rows="3" maxlength="255" class="event-textarea" placeholder="Nearest tube: North Greenwich. Parking available at...">{{ old('parking_info') }}</textarea>
+      <textarea name="parking_info" rows="3" maxlength="1000" class="event-textarea" placeholder="Nearest tube: North Greenwich. Parking available at...">{{ old('parking_info') }}</textarea>
     </div>
 
     <div class="event-field">

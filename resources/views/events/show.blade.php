@@ -6,7 +6,15 @@
     $heroImage = $event->banner_url ?: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1600&h=900&fit=crop';
     $venueLine = collect([$event->venue_name, $event->venue_address, $event->city, $event->postcode])->filter()->implode(', ');
     $mapQuery = rawurlencode($venueLine ?: 'Central Park Amphitheater, New York, NY');
-    $aboutText = trim(strip_tags($event->description ?: $event->short_description ?: 'Join us for a standout live experience with premium production, unforgettable performances, and an incredible crowd.'));
+    $aboutSource = (string) ($event->description ?: $event->short_description ?: 'Join us for a standout live experience with premium production, unforgettable performances, and an incredible crowd.');
+    $aboutText = preg_replace('/\n{3,}/', "\n\n", trim(html_entity_decode(strip_tags(
+        preg_replace(
+            '/<(?:\/?(?:p|div|h[1-6]|li))[^>]*>|<br\s*\/?>/i',
+            "\n",
+            $aboutSource
+        )
+    ))));
+    $aboutTextHtml = nl2br(e($aboutText));
     $organiserName = $event->organiser->name ?? 'Premier Events Co.';
     $organiserBio = $event->organiser->bio ?: 'We create unforgettable experiences for all audiences.';
     $organiserLogo = $event->organiser->logo_url ?? null;
@@ -16,8 +24,8 @@
     $activeReservationSeconds = $activeReservation?->secondsRemaining() ?? 0;
     $reservedQuantities = $ticketItemsOld
         ->mapWithKeys(fn ($item) => [(int) data_get($item, 'ticket_tier_id') => (int) data_get($item, 'quantity', 0)]);
-    $eventStartLabel = ticketly_format_datetime($event->starts_at);
-    $eventEndLabel = ticketly_format_datetime($event->ends_at);
+    $eventStartLabel = ticketly_format_compact_datetime($event->starts_at);
+    $eventEndLabel = ticketly_format_compact_datetime($event->ends_at);
     $lineupItems = collect($event->performer_lineup ?? [])->filter(fn ($item) => filled(data_get($item, 'name')))->values();
     if ($lineupItems->isEmpty()) {
         $lineupItems = collect([
@@ -104,7 +112,7 @@
                     <section class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-8">
                         <div class="mx-auto w-full max-w-4xl">
                             <h2 class="text-[1.75rem] font-bold tracking-[-0.03em] text-slate-900">About This Event</h2>
-                            <p class="mt-6 break-words text-[1.02rem] leading-8 text-slate-500 md:text-justify [overflow-wrap:anywhere]">{{ $aboutText }}</p>
+                            <div class="mt-6 break-words text-[1.02rem] leading-8 text-slate-500 md:text-justify [overflow-wrap:anywhere]">{!! $aboutTextHtml !!}</div>
                         </div>
                     </section>
 

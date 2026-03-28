@@ -1,6 +1,11 @@
 @php
   $portalFeePercentage = ticketly_format_percentage(ticketly_setting('portal_fee_percentage', config('ticketly.portal_fee_percentage', 10)));
   $serviceFeePercentage = ticketly_format_percentage(ticketly_setting('service_fee_percentage', config('ticketly.service_fee_percentage', 5)));
+  $eventStartsAt = $booking->event->starts_at;
+  $eventEndsAt = $booking->event->ends_at;
+  $isMultiDayEvent = $eventEndsAt && ! $eventStartsAt->isSameDay($eventEndsAt);
+  $eventStartDisplay = ticketly_format_compact_datetime($eventStartsAt);
+  $eventEndDisplay = ticketly_format_compact_datetime($eventEndsAt);
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -264,12 +269,12 @@
               <td class="v">{{ $booking->event->title }}</td>
             </tr>
             <tr>
-              <td class="k">Date</td>
-              <td class="v">{{ ticketly_format_date($booking->event->starts_at) }}</td>
+              <td class="k">{{ $isMultiDayEvent ? 'Start' : 'Date' }}</td>
+              <td class="v">{{ $isMultiDayEvent ? $eventStartDisplay : ticketly_format_date($eventStartsAt) }}</td>
             </tr>
             <tr>
-              <td class="k">Time</td>
-              <td class="v">{{ ticketly_format_time($booking->event->starts_at) }} - {{ ticketly_format_time($booking->event->ends_at) }}</td>
+              <td class="k">{{ $isMultiDayEvent ? 'End' : 'Time' }}</td>
+              <td class="v">{{ $isMultiDayEvent ? $eventEndDisplay : ticketly_format_time($eventStartsAt) . ' - ' . ticketly_format_time($eventEndsAt) }}</td>
             </tr>
             <tr>
               <td class="k">Venue</td>

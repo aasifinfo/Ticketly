@@ -84,7 +84,6 @@ class CheckoutController extends Controller
         // Promo
         $subtotal = (float) $reservation->subtotal;
         $promoCode = null;
-        $discountAmount = 0.0;
         if (!empty($validated['promo_code'])) {
             $resolvedPromo = PromoCode::resolveForEvent($reservation->event, (string) $validated['promo_code']);
 
@@ -95,13 +94,9 @@ class CheckoutController extends Controller
             }
 
             $promoCode = $resolvedPromo['promo'];
-
-            if ($promoCode) {
-                $discountAmount = $promoCode->calculateDiscount($subtotal);
-            }
         }
 
-        $pricing = ServiceFeeCalculator::total($subtotal, $discountAmount);
+        $pricing = ServiceFeeCalculator::totalForPromo($subtotal, $promoCode);
 
         $connectedOrganiser = $this->connectedOrganiser($reservation);
         $platformFee = $pricing['portal_fee'] + $pricing['service_fee'];
@@ -613,7 +608,7 @@ class CheckoutController extends Controller
 
         return $request->validate([
             'promo_code' => 'nullable|string|max:100',
-            'name' => ['required', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:100', "regex:/^[A-Za-z .']+$/"],
             'email' => ['required', 'email:rfc', 'max:100'],
             'phone' => [
                 'required',
@@ -633,6 +628,7 @@ class CheckoutController extends Controller
         ], [
             'name.required' => 'Full name is required.',
             'name.max' => 'Full name may not be greater than 100 characters.',
+            'name.regex' => 'Full name may only contain letters, spaces, dots, and apostrophes.',
             'email.required' => 'Email address is required.',
             'email.email' => 'Please enter a valid email address.',
             'email.max' => 'Email address may not be greater than 100 characters.',

@@ -29,7 +29,7 @@ class EventValidationRules
             'city' => 'required|string|max:50',
             'country' => 'nullable|string|max:100',
             'postcode' => 'nullable|string|max:10',
-            'parking_info' => 'nullable|string|max:255',
+            'parking_info' => 'nullable|string|max:1000',
             'refund_policy' => 'nullable|string|max:1000',
             'lineup_names' => 'nullable|array',
             'lineup_names.*' => 'nullable|string|max:50',

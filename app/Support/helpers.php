@@ -140,3 +140,12 @@ if (! function_exists('ticketly_format_datetime')) {
         return $date ? $date->format('l M j, Y g:ia') : $fallback;
     }
 }
+
+if (! function_exists('ticketly_format_compact_datetime')) {
+    function ticketly_format_compact_datetime(CarbonInterface|string|null $value, string $fallback = ''): string
+    {
+        $date = ticketly_carbon($value);
+
+        return $date ? $date->format('d M Y, g:i A') : $fallback;
+    }
+}

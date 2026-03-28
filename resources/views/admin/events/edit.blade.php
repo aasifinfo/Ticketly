@@ -130,7 +130,7 @@
 
       <div class="md:col-span-2">
         <label class="text-xs uppercase tracking-wider text-gray-400">Parking Info</label>
-        <textarea name="parking_info" rows="3" maxlength="255" class="{{ $inputClasses('parking_info') }}">{{ $parkingValue }}</textarea>
+        <textarea name="parking_info" rows="3" maxlength="1000" class="{{ $inputClasses('parking_info') }}">{{ $parkingValue }}</textarea>
         <p class="input-error mt-1 text-xs text-red-500 hidden"></p>
         @error('parking_info')
           <p class="mt-1 text-xs text-rose-400">{{ $message }}</p>

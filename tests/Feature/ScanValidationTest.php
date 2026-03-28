@@ -85,6 +85,28 @@ class ScanValidationTest extends TestCase
         $this->assertNotNull($booking->scanned_at);
     }
 
+    public function test_organiser_can_validate_ticket_from_encoded_qr_payload(): void
+    {
+        Carbon::setTestNow(Carbon::create(2026, 3, 23, 18, 5, 0, 'Asia/Kolkata'));
+        $booking = $this->createBookingForEvent();
+        $qrPayload = app(\App\Services\TicketQrCodeService::class)->payloadForBooking($booking);
+
+        $response = $this
+            ->withSession($this->organiserSession($booking->event->organiser))
+            ->postJson('/api/scan-ticket', [
+                'qr_code' => $qrPayload,
+            ]);
+
+        $response->assertOk()
+            ->assertJson([
+                'status' => 'success',
+                'type' => 'green',
+                'code' => 'verified',
+                'ticket_uuid' => $booking->ticket_uuid,
+                'booking_reference' => $booking->reference,
+            ]);
+    }
+
     public function test_admin_can_validate_any_ticket(): void
     {
         Carbon::setTestNow(Carbon::create(2026, 3, 23, 18, 15, 0, 'Asia/Kolkata'));

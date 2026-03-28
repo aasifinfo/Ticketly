@@ -100,7 +100,7 @@ class OrganiserSponsorshipTest extends TestCase
 
         $response->assertOk();
         $response->assertSeeInOrder([
-            'Manage Tiers',
+            'Ticket Tiers',
             'Manage Sponsorship',
             'Preview',
         ]);

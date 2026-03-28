@@ -18,6 +18,7 @@ use App\Models\SystemSetting;
 use App\Models\TicketTier;
 use App\Models\User;
 use App\Models\VisitorLog;
+use App\Services\ServiceFeeCalculator;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
@@ -951,33 +952,28 @@ class FakeProjectDataSeeder extends Seeder
     private function refreshReservationTotals(Reservation $reservation): void
     {
         $subtotal = round((float) $reservation->items->sum('subtotal'), 2);
-        $discount = $reservation->promoCode ? $reservation->promoCode->calculateDiscount($subtotal) : 0;
-        $serviceFee = round($subtotal * self::SERVICE_FEE_RATE, 2);
-        $portalFee = round($subtotal * self::PORTAL_FEE_RATE, 2);
+        $pricing = ServiceFeeCalculator::totalForPromo($subtotal, $reservation->promoCode);
 
         $reservation->update([
-            'subtotal' => $subtotal,
-            'discount_amount' => $discount,
-            'service_fee' => $serviceFee,
-            'portal_fee' => $portalFee,
-            'total' => max(0, round($subtotal + $serviceFee + $portalFee - $discount, 2)),
+            'subtotal' => $pricing['subtotal'],
+            'discount_amount' => $pricing['discount'],
+            'service_fee' => $pricing['service_fee'],
+            'portal_fee' => $pricing['portal_fee'],
+            'total' => $pricing['total'],
         ]);
     }
 
     private function refreshBookingTotals(Booking $booking): void
     {
         $subtotal = round((float) $booking->items->sum('subtotal'), 2);
-        $discount = $booking->promoCode ? $booking->promoCode->calculateDiscount($subtotal) : 0;
-        $serviceFee = round($subtotal * self::SERVICE_FEE_RATE, 2);
-        $portalFee = round($subtotal * self::PORTAL_FEE_RATE, 2);
-        $total = max(0, round($subtotal + $serviceFee + $portalFee - $discount, 2));
+        $pricing = ServiceFeeCalculator::totalForPromo($subtotal, $booking->promoCode);
 
         $booking->update([
-            'subtotal' => $subtotal,
-            'discount_amount' => $discount,
-            'service_fee' => $serviceFee,
-            'portal_fee' => $portalFee,
-            'total' => $total,
+            'subtotal' => $pricing['subtotal'],
+            'discount_amount' => $pricing['discount'],
+            'service_fee' => $pricing['service_fee'],
+            'portal_fee' => $pricing['portal_fee'],
+            'total' => $pricing['total'],
             'currency' => ticketly_currency(),
         ]);
     }

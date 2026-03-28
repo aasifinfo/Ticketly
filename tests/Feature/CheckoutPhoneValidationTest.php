@@ -154,6 +154,25 @@ class CheckoutPhoneValidationTest extends TestCase
         $this->assertSame('Full name may not be greater than 100 characters.', $response->json('errors.name.0'));
     }
 
+    public function test_checkout_intent_rejects_full_name_with_invalid_special_characters(): void
+    {
+        $reservation = $this->makeReservation($this->makeEvent($this->makeOrganiser()));
+
+        $response = $this->postJson('/checkout/' . $reservation->token . '/intent', [
+            'name' => 'Guest!@#$%^&*()',
+            'email' => 'checkout.user@example.com',
+            'phone' => '07123456789',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('name');
+
+        $this->assertSame(
+            'Full name may only contain letters, spaces, dots, and apostrophes.',
+            $response->json('errors.name.0')
+        );
+    }
+
     public function test_checkout_intent_rejects_email_longer_than_100_characters(): void
     {
         $reservation = $this->makeReservation($this->makeEvent($this->makeOrganiser()));
@@ -192,7 +211,9 @@ class CheckoutPhoneValidationTest extends TestCase
         $response->assertOk();
         $response->assertSee('ticketly-global-loader', false);
         $response->assertSee('maxlength="100"', false);
+        $response->assertSee('pattern="[A-Za-z .\']+"', false);
         $response->assertSee('Full name maximum limit reached.', false);
+        $response->assertSee('Full name may only contain letters, spaces, dots, and apostrophes.', false);
         $response->assertSee('Email address maximum limit reached.', false);
         $response->assertSee('Phone number must start with 07', false);
         $response->assertSee('Phone Number Must Be Exactly 11 digits', false);

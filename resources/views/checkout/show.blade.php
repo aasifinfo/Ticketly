@@ -122,7 +122,7 @@
                         <div>
                             <label for="customer-name" class="mb-3 block text-[0.98rem] font-medium text-slate-700 max-[375px]:mb-2 max-[375px]:text-[0.9rem]">Full Name <span class="text-rose-500" aria-hidden="true">*</span></label>
                             <input id="customer-name" type="text" autocomplete="name" aria-describedby="customer-name-error"
-                                   maxlength="100" required
+                                   maxlength="100" pattern="[A-Za-z .']+" title="Use letters, spaces, dots, and apostrophes only" required
                                    class="h-16 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[1rem] text-slate-900 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-14 max-[375px]:px-4 max-[375px]:text-[0.95rem]"
                                    placeholder="Enter your full name" value="{{ old('name', $reservation->customer_name) }}">
                             <p id="customer-name-error" class="hidden mt-2 text-sm text-rose-600"></p>
@@ -566,8 +566,10 @@ document.addEventListener('DOMContentLoaded', function () {
         let error = '';
 
         if (fieldId === 'customer-name') {
+            const fullNamePattern = /^[A-Za-z .']+$/;
             if (requireValue && !value) error = 'Full name is required.';
             else if (value.length > 100) error = 'Full name may not be greater than 100 characters.';
+            else if (value && !fullNamePattern.test(value)) error = 'Full name may only contain letters, spaces, dots, and apostrophes.';
         }
 
         if (fieldId === 'customer-email') {

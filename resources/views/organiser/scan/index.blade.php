@@ -216,10 +216,30 @@
         return url.toString();
       }
     } catch (error) {
-      return null;
+      // Fall through to encoded payload parsing.
+    }
+
+    const payload = decodeQrPayload(text);
+    if (payload && typeof payload.event_url === 'string' && payload.event_url.trim() !== '') {
+      return payload.event_url.trim();
     }
 
     return null;
+  }
+
+  function decodeQrPayload(rawValue) {
+    const text = String(rawValue || '').trim();
+    if (!text) return null;
+
+    const normalized = text.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+
+    try {
+      const parsed = JSON.parse(atob(padded));
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch (error) {
+      return null;
+    }
   }
 
   function shouldIgnoreScan(rawValue) {

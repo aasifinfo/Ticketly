@@ -997,7 +997,7 @@
         @endif
         <button type="button" onclick="document.getElementById('cancel-modal').classList.remove('hidden')" class="event-status-btn event-status-btn--danger">Cancel Event</button>
       @endif
-      <a href="{{ route('organiser.tiers.index', $event->id) }}" class="event-status-btn">Manage Tiers</a>
+      <a href="{{ route('organiser.tiers.index', $event->id) }}" class="event-status-btn">Ticket Tiers</a>
       <a href="{{ route('organiser.sponsorships.index', $event->id) }}" class="event-status-btn">Manage Sponsorship</a>
       <a href="{{ $previewUrl }}" target="_blank" class="event-status-btn">Preview</a>
     </div>
@@ -1250,7 +1250,7 @@
   <div class="event-grid">
     <div class="event-field">
       <label class="event-label">Parking / Transport Info <span class="event-inline-note">(optional)</span></label>
-      <textarea name="parking_info" rows="3" maxlength="255" class="event-textarea">{{ old('parking_info', $event->parking_info) }}</textarea>
+      <textarea name="parking_info" rows="3" maxlength="1000" class="event-textarea">{{ old('parking_info', $event->parking_info) }}</textarea>
     </div>
 
     <div class="event-field">

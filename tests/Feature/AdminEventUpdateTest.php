@@ -178,4 +178,36 @@ class AdminEventUpdateTest extends TestCase
             '20:00',
         ]);
     }
+
+    public function test_admin_event_update_accepts_long_parking_info(): void
+    {
+        $admin = $this->makeAdmin();
+        $organiser = $this->makeOrganiser();
+        $event = $this->makeEvent($organiser);
+        $parkingInfo = trim(str_repeat('Parking guidance line. ', 40));
+
+        $response = $this
+            ->withSession($this->adminSession($admin))
+            ->put('/admin/events/' . $event->id, [
+                'title' => 'Updated Admin Event',
+                'category' => 'Comedy',
+                'starts_at' => '2026-05-21T18:00',
+                'ends_at' => '2026-05-21T22:00',
+                'ticket_validation_starts_at' => '2026-05-21T16:00',
+                'ticket_validation_ends_at' => '2026-05-21T22:00',
+                'venue_name' => 'Updated Venue',
+                'venue_address' => '456 Market Road',
+                'city' => 'Surat',
+                'postcode' => '395003',
+                'short_description' => 'Updated short description',
+                'description' => 'Updated description',
+                'parking_info' => $parkingInfo,
+                'refund_policy' => 'Updated refund policy',
+            ]);
+
+        $response->assertRedirect(route('admin.events.index'));
+
+        $event->refresh();
+        $this->assertSame($parkingInfo, $event->parking_info);
+    }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Organiser\AuthController as OrganiserAuthController;
 use App\Models\Booking;
+use App\Services\TicketQrCodeService;
 use App\Services\TicketValidationService;
 use App\Support\AdminAuth;
 use Illuminate\Http\JsonResponse;
@@ -13,7 +14,8 @@ use Illuminate\Http\Request;
 class ScanValidationController extends Controller
 {
     public function __construct(
-        private readonly TicketValidationService $ticketValidationService
+        private readonly TicketValidationService $ticketValidationService,
+        private readonly TicketQrCodeService $ticketQrCodeService
     ) {}
 
     public function scanTicket(Request $request): JsonResponse
@@ -129,6 +131,13 @@ class ScanValidationController extends Controller
             return null;
         }
 
+        $decodedPayload = $this->identifiersFromDecodedPayload(
+            $this->ticketQrCodeService->decodePayload($qrCode)
+        );
+        if ($decodedPayload) {
+            return $decodedPayload;
+        }
+
         $parsedUrl = $this->parseScanUrl($qrCode);
         if ($parsedUrl) {
             return $parsedUrl;
@@ -163,6 +172,13 @@ class ScanValidationController extends Controller
         $query = [];
         parse_str($parts['query'] ?? '', $query);
 
+        $decodedPayload = $this->identifiersFromDecodedPayload(
+            $this->ticketQrCodeService->decodePayload((string) ($query['data'] ?? ''))
+        );
+        if ($decodedPayload) {
+            return $decodedPayload;
+        }
+
         $ticketUuid = trim((string) ($query['ticket_uuid'] ?? ''));
         if ($ticketUuid !== '') {
             return ['ticket_uuid' => $ticketUuid];
@@ -175,6 +191,25 @@ class ScanValidationController extends Controller
 
         if (!empty($parts['path']) && preg_match('#/bookings/([A-Z0-9-]+)#i', $parts['path'], $matches) === 1) {
             return ['booking_reference' => strtoupper($matches[1])];
+        }
+
+        return null;
+    }
+
+    private function identifiersFromDecodedPayload(?array $payload): ?array
+    {
+        if (!is_array($payload) || $payload === []) {
+            return null;
+        }
+
+        $ticketUuid = trim((string) ($payload['ticket_uuid'] ?? ''));
+        if ($ticketUuid !== '') {
+            return ['ticket_uuid' => $ticketUuid];
+        }
+
+        $bookingReference = trim((string) ($payload['booking_reference'] ?? ''));
+        if ($bookingReference !== '') {
+            return ['booking_reference' => strtoupper($bookingReference)];
         }
 
         return null;

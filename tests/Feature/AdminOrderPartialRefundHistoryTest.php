@@ -153,7 +153,7 @@ class AdminOrderPartialRefundHistoryTest extends TestCase
         ], false);
     }
 
-    public function test_partial_refund_with_promo_code_uses_proportional_paid_amount_without_recalculating_discount(): void
+    public function test_partial_refund_with_fixed_promo_code_refunds_only_discounted_ticket_price(): void
     {
         $admin = $this->makeAdmin(['email' => 'refund.admin+promo@example.com']);
         $organiser = $this->makeOrganiser([
@@ -204,9 +204,9 @@ class AdminOrderPartialRefundHistoryTest extends TestCase
         $this->assertSame('partially_refunded', $booking->status);
         $this->assertSame('36.00', $booking->refund_amount);
         $this->assertSame('80.00', $booking->subtotal);
-        $this->assertSame('30.00', $booking->discount_amount);
-        $this->assertSame('12.00', $booking->portal_fee);
-        $this->assertSame('6.00', $booking->service_fee);
+        $this->assertSame('20.00', $booking->discount_amount);
+        $this->assertSame('8.00', $booking->portal_fee);
+        $this->assertSame('4.00', $booking->service_fee);
         $this->assertSame('72.00', $booking->total);
         $this->assertSame(2, $item->quantity);
         $this->assertSame(98, $tier->available_quantity);
@@ -218,6 +218,164 @@ class AdminOrderPartialRefundHistoryTest extends TestCase
             'remaining_total' => '72.00',
             'reason' => 'Promo booking refund',
         ]);
+
+        $this->withSession($this->adminSession($admin))->post(route('admin.orders.partial-cancel', $booking->id), [
+            'booking_item_id' => $item->id,
+            'refund_quantity' => 1,
+            'refund_reason' => 'Promo booking refund second ticket',
+        ])->assertRedirect();
+
+        $booking->refresh();
+        $item->refresh();
+        $tier->refresh();
+
+        $this->assertSame('partially_refunded', $booking->status);
+        $this->assertSame('72.00', $booking->refund_amount);
+        $this->assertSame('40.00', $booking->subtotal);
+        $this->assertSame('10.00', $booking->discount_amount);
+        $this->assertSame('4.00', $booking->portal_fee);
+        $this->assertSame('2.00', $booking->service_fee);
+        $this->assertSame('36.00', $booking->total);
+        $this->assertSame(1, $item->quantity);
+        $this->assertSame(99, $tier->available_quantity);
+
+        $this->assertDatabaseHas('booking_refunds', [
+            'booking_id' => $booking->id,
+            'original_total' => '72.00',
+            'refunded_amount' => '36.00',
+            'remaining_total' => '36.00',
+            'reason' => 'Promo booking refund second ticket',
+        ]);
+    }
+
+    public function test_partial_refund_with_percentage_promo_code_refunds_only_discounted_ticket_price(): void
+    {
+        $admin = $this->makeAdmin(['email' => 'refund.admin+percentage@example.com']);
+        $organiser = $this->makeOrganiser([
+            'email' => 'refund.organiser+percentage@example.com',
+            'phone' => '07123456770',
+        ]);
+        $event = $this->makeEvent($organiser, ['slug' => 'refund-event-percentage']);
+        $tier = $this->makeTicketTier($event, ['available_quantity' => 97]);
+        $promo = $this->makePromoCode($organiser, $event, [
+            'code' => 'PROMO20P',
+            'type' => 'percentage',
+            'value' => 20,
+        ]);
+
+        $booking = Booking::create([
+            'reference' => 'TKT-REFPERCENT1',
+            'event_id' => $event->id,
+            'promo_code_id' => $promo->id,
+            'customer_name' => 'Percentage Customer',
+            'customer_email' => 'percentage.customer@example.com',
+            'customer_phone' => '07123456789',
+            'subtotal' => 120,
+            'discount_amount' => 27.60,
+            'portal_fee' => 12,
+            'service_fee' => 6,
+            'total' => 110.40,
+            'currency' => 'GBP',
+            'status' => 'paid',
+            'stripe_payment_intent_id' => 'pi_test_refund_percentage',
+        ]);
+
+        $item = BookingItem::create([
+            'booking_id' => $booking->id,
+            'ticket_tier_id' => $tier->id,
+            'quantity' => 3,
+            'unit_price' => 40,
+            'subtotal' => 120,
+        ]);
+
+        $response = $this->withSession($this->adminSession($admin))->post(route('admin.orders.partial-cancel', $booking->id), [
+            'booking_item_id' => $item->id,
+            'refund_quantity' => 1,
+            'refund_reason' => 'Percentage promo booking refund',
+        ]);
+
+        $response->assertRedirect();
+
+        $booking->refresh();
+        $item->refresh();
+        $tier->refresh();
+
+        $this->assertSame('partially_refunded', $booking->status);
+        $this->assertSame('36.80', $booking->refund_amount);
+        $this->assertSame('80.00', $booking->subtotal);
+        $this->assertSame('18.40', $booking->discount_amount);
+        $this->assertSame('8.00', $booking->portal_fee);
+        $this->assertSame('4.00', $booking->service_fee);
+        $this->assertSame('73.60', $booking->total);
+        $this->assertSame(2, $item->quantity);
+        $this->assertSame(98, $tier->available_quantity);
+
+        $this->assertDatabaseHas('booking_refunds', [
+            'booking_id' => $booking->id,
+            'original_total' => '110.40',
+            'refunded_amount' => '36.80',
+            'remaining_total' => '73.60',
+            'reason' => 'Percentage promo booking refund',
+        ]);
+    }
+
+    public function test_partial_refund_with_promo_code_does_not_recalculate_fees_from_current_settings(): void
+    {
+        config([
+            'ticketly.portal_fee_percentage' => 12.5,
+            'ticketly.service_fee_percentage' => 7.5,
+        ]);
+
+        $admin = $this->makeAdmin(['email' => 'refund.admin+dynamicfees@example.com']);
+        $organiser = $this->makeOrganiser([
+            'email' => 'refund.organiser+dynamicfees@example.com',
+            'phone' => '07123456760',
+        ]);
+        $event = $this->makeEvent($organiser, ['slug' => 'refund-event-dynamic-fees']);
+        $tier = $this->makeTicketTier($event, ['available_quantity' => 97]);
+        $promo = $this->makePromoCode($organiser, $event, ['code' => 'PROMODYNAMIC']);
+
+        $booking = Booking::create([
+            'reference' => 'TKT-REFDYNAMIC1',
+            'event_id' => $event->id,
+            'promo_code_id' => $promo->id,
+            'customer_name' => 'Dynamic Fee Customer',
+            'customer_email' => 'dynamic.fee.customer@example.com',
+            'customer_phone' => '07123456789',
+            'subtotal' => 120,
+            'discount_amount' => 30,
+            'portal_fee' => 15,
+            'service_fee' => 9,
+            'total' => 114,
+            'currency' => 'GBP',
+            'status' => 'paid',
+            'stripe_payment_intent_id' => 'pi_test_refund_dynamic_fee',
+        ]);
+
+        $item = BookingItem::create([
+            'booking_id' => $booking->id,
+            'ticket_tier_id' => $tier->id,
+            'quantity' => 3,
+            'unit_price' => 40,
+            'subtotal' => 120,
+        ]);
+
+        $this->withSession($this->adminSession($admin))->post(route('admin.orders.partial-cancel', $booking->id), [
+            'booking_item_id' => $item->id,
+            'refund_quantity' => 1,
+            'refund_reason' => 'Dynamic fee promo refund',
+        ])->assertRedirect();
+
+        $booking->refresh();
+        $item->refresh();
+
+        $this->assertSame('80.00', $booking->subtotal);
+        $this->assertSame('20.00', $booking->discount_amount);
+        $this->assertSame('10.00', $booking->portal_fee);
+        $this->assertSame('6.00', $booking->service_fee);
+        $this->assertSame('76.00', $booking->total);
+        $this->assertSame('38.00', $booking->refund_amount);
+        $this->assertSame(2, $item->quantity);
     }
 
     private function makeAdmin(array $overrides = []): Admin

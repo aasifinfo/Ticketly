@@ -195,8 +195,7 @@ class PromoCodeController extends Controller
             ]);
         }
 
-        $pricing = ServiceFeeCalculator::total((float) $request->subtotal);
-        $discount = $promo->calculateDiscount((float) $request->subtotal);
+        $pricing = ServiceFeeCalculator::totalForPromo((float) $request->subtotal, $promo);
 
         return response()->json([
             'valid'    => true,
@@ -204,10 +203,10 @@ class PromoCodeController extends Controller
             'type'     => $promo->type,
             'value'    => $promo->value,
             'gross_total' => $pricing['gross_total'],
-            'discount' => $discount,
+            'discount' => $pricing['discount'],
             'message'  => $promo->type === 'percentage'
-                ? number_format($promo->value, 0) . '% discount applied - saving ' . number_format($discount, 2)
-                : number_format($discount, 2) . ' discount applied',
+                ? number_format($promo->value, 0) . '% discount applied - saving ' . number_format($pricing['discount'], 2)
+                : number_format($pricing['discount'], 2) . ' discount applied',
         ]);
     }
 

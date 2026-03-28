@@ -171,6 +171,34 @@ class PromoCodeOrganiserScopeTest extends TestCase
         ]);
     }
 
+    public function test_public_promo_validation_returns_discount_based_on_total_before_discount(): void
+    {
+        config([
+            'ticketly.portal_fee_percentage' => 10,
+            'ticketly.service_fee_percentage' => 5,
+        ]);
+
+        $organiser = $this->makeOrganiser('pricing');
+        $event = $this->makeEvent($organiser, 'pricing');
+        $this->makePromo($organiser, 'SAVE20', $event, [
+            'type' => 'percentage',
+            'value' => 20,
+        ]);
+
+        $response = $this->postJson(route('promo.validate'), [
+            'code' => 'SAVE20',
+            'subtotal' => 100,
+            'event_id' => $event->id,
+        ]);
+
+        $response->assertOk()->assertJson([
+            'valid' => true,
+            'gross_total' => 115.0,
+            'discount' => 23.0,
+            'message' => '20% discount applied - saving 23.00',
+        ]);
+    }
+
     public function test_checkout_intent_rejects_promo_code_from_different_organiser(): void
     {
         $eventOrganiser = $this->makeOrganiser('checkout');
