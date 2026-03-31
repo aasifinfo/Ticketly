@@ -153,7 +153,7 @@
           </div>
           <div class="flex items-center justify-between text-gray-300">
             <span>Current Remaining</span>
-            <span>{{ ticketly_money($remainingTotal) }}</span>
+            <span>{{ ticketly_money($booking->total ?? 0) }}</span>
           </div>
         </div>
 
