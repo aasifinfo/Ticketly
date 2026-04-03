@@ -74,9 +74,10 @@ class EventController extends Controller
             'poster' => 'required|image|mimes:jpg,jpeg,png,webp|max:4096',
         ]);
 
-        return response()->json(
-            $posterAutofillService->extractDetails($request->file('poster'))
-        );
+        $posterData = $posterAutofillService->extractDetails($request->file('poster'));
+        $request->merge($posterData);
+
+        return response()->json($posterData);
     }
 
     public function show(Request $request, int $id)

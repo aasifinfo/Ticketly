@@ -4,12 +4,14 @@ namespace App\Services;
 
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class PosterAutofillService
 {
+    private const DEFAULT_CITY = 'Surat';
+    private const DEFAULT_POSTCODE = '395007';
+
     private const OUTPUT_KEYS = [
         'event_title',
         'short_description',
@@ -33,8 +35,12 @@ class PosterAutofillService
         'mumbai' => '400001',
         'new delhi' => '110001',
         'pune' => '411001',
-        'surat' => '395003',
+        'surat' => '395007',
     ];
+
+    public function __construct(
+        private readonly PosterAIService $posterAIService
+    ) {}
 
     public function extractDetails(UploadedFile $poster): array
     {
@@ -56,129 +62,7 @@ class PosterAutofillService
 
     private function fetchPosterDetails(UploadedFile $poster): ?array
     {
-        $provider = Str::lower((string) config('services.poster_ai.provider', 'groq'));
-
-        return match ($provider) {
-            'groq' => $this->fetchFromGroq($poster),
-            default => null,
-        };
-    }
-
-    private function fetchFromGroq(UploadedFile $poster): ?array
-    {
-        $apiKey = trim((string) config('services.poster_ai.groq.api_key', ''));
-        $model = trim((string) config('services.poster_ai.groq.model', ''));
-        $url = trim((string) config('services.poster_ai.groq.url', 'https://api.groq.com/openai/v1/chat/completions'));
-        $timeout = (int) config('services.poster_ai.groq.timeout', 30);
-
-        if ($apiKey === '' || $model === '') {
-            return null;
-        }
-
-        $response = $this->sendGroqRequest($poster, $apiKey, $model, $url, $timeout, true);
-
-        if (!$response->successful()) {
-            $response = $this->sendGroqRequest($poster, $apiKey, $model, $url, $timeout, false);
-        }
-
-        if (!$response->successful()) {
-            Log::warning('[PosterAutofillService] Groq poster parsing request was not successful.', [
-                'status' => $response->status(),
-                'body' => Str::limit($response->body(), 1000),
-            ]);
-
-            return null;
-        }
-
-        $content = $this->extractMessageContent($response->json());
-        if ($content === null) {
-            return null;
-        }
-
-        return $this->decodeJsonPayload($content);
-    }
-
-    private function sendGroqRequest(
-        UploadedFile $poster,
-        string $apiKey,
-        string $model,
-        string $url,
-        int $timeout,
-        bool $preferJsonResponseFormat
-    ) {
-        $payload = [
-            'model' => $model,
-            'temperature' => 0.2,
-            'messages' => [
-                [
-                    'role' => 'system',
-                    'content' => 'You extract event details from poster images and always reply with JSON only.',
-                ],
-                [
-                    'role' => 'user',
-                    'content' => [
-                        [
-                            'type' => 'text',
-                            'text' => $this->buildPromptText(),
-                        ],
-                        [
-                            'type' => 'image_url',
-                            'image_url' => [
-                                'url' => $this->buildPosterDataUri($poster),
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-        ];
-
-        if ($preferJsonResponseFormat) {
-            $payload['response_format'] = ['type' => 'json_object'];
-        }
-
-        return Http::withToken($apiKey)
-            ->acceptJson()
-            ->timeout($timeout)
-            ->retry(1, 250, throw: false)
-            ->post($url, $payload);
-    }
-
-    private function buildPromptText(): string
-    {
-        return <<<PROMPT
-Analyze this event poster image.
-
-First, mentally extract the readable poster text.
-Then identify the event details and return ONLY a JSON object with exactly these keys:
-{
-  "event_title": "",
-  "short_description": "",
-  "full_description": "",
-  "start_datetime": "",
-  "end_datetime": "",
-  "venue_name": "",
-  "city": "",
-  "address": "",
-  "postcode": ""
-}
-
-Rules:
-- Use the poster text whenever it is readable.
-- event_title should be the most prominent event name or headline.
-- short_description should be a concise 1-2 line summary.
-- full_description should be a realistic paragraph based on the poster context.
-- start_datetime and end_datetime must use 24-hour format YYYY-MM-DDTHH:MM.
-- If the poster has no year, choose the next upcoming reasonable future date.
-- If the start time is missing, infer a reasonable event start time.
-- If the end time is missing, set it 2 to 3 hours after start_datetime.
-- If venue_name, city, address, or postcode are missing, infer realistic values from the poster context.
-- If the poster has no readable event text, infer all fields from the visual theme and style.
-- Never return null, markdown, comments, or extra keys.
-- Never leave event_title, short_description, full_description, start_datetime, end_datetime, venue_name, city, or address empty.
-- Keep event_title within 50 characters, short_description within 255 characters, venue_name within 50 characters, city within 50 characters, address within 300 characters, and postcode within 10 characters.
-
-Today is {$this->now()->format('Y-m-d')}.
-PROMPT;
+        return $this->posterAIService->scanPoster($this->buildPosterDataUri($poster));
     }
 
     private function buildPosterDataUri(UploadedFile $poster): string
@@ -189,76 +73,29 @@ PROMPT;
         return "data:{$mimeType};base64,{$contents}";
     }
 
-    private function extractMessageContent(array $payload): ?string
-    {
-        $content = data_get($payload, 'choices.0.message.content');
-
-        if (is_string($content)) {
-            return $content;
-        }
-
-        if (!is_array($content)) {
-            return null;
-        }
-
-        $texts = collect($content)
-            ->map(function ($item) {
-                if (is_string($item)) {
-                    return $item;
-                }
-
-                if (is_array($item)) {
-                    return $item['text'] ?? null;
-                }
-
-                return null;
-            })
-            ->filter()
-            ->values()
-            ->all();
-
-        return empty($texts) ? null : implode("\n", $texts);
-    }
-
-    private function decodeJsonPayload(string $content): ?array
-    {
-        $trimmed = trim($content);
-        if ($trimmed === '') {
-            return null;
-        }
-
-        if (preg_match('/```(?:json)?\s*(\{.*\})\s*```/is', $trimmed, $matches) === 1) {
-            $trimmed = $matches[1];
-        } else {
-            $firstBrace = strpos($trimmed, '{');
-            $lastBrace = strrpos($trimmed, '}');
-
-            if ($firstBrace !== false && $lastBrace !== false && $lastBrace > $firstBrace) {
-                $trimmed = substr($trimmed, $firstBrace, $lastBrace - $firstBrace + 1);
-            }
-        }
-
-        $decoded = json_decode($trimmed, true);
-
-        return is_array($decoded) ? $decoded : null;
-    }
-
     private function normalizePayload(array $candidate, array $fallback): array
     {
+        $fallbackStartAt = Carbon::createFromFormat('Y-m-d\TH:i', $fallback['start_datetime']);
+        $fallbackEndAt = Carbon::createFromFormat('Y-m-d\TH:i', $fallback['end_datetime']);
+
+        $candidateStart = $this->firstFilled($candidate, ['start_datetime', 'start_date_time', 'start_date', 'date_time']);
+        $candidateEnd = $this->firstFilled($candidate, ['end_datetime', 'end_date_time', 'end_date']);
+
         $title = $this->cleanText(
             $this->firstFilled($candidate, ['event_title', 'title', 'name']) ?: $fallback['event_title'],
             50
         );
 
         $startAt = $this->normalizeStartDateTime(
-            $this->firstFilled($candidate, ['start_datetime', 'start_date_time', 'start_date', 'date_time']),
-            Carbon::createFromFormat('Y-m-d\TH:i', $fallback['start_datetime'])
+            $candidateStart,
+            $candidateEnd,
+            $fallbackStartAt
         );
 
         $endAt = $this->normalizeEndDateTime(
-            $this->firstFilled($candidate, ['end_datetime', 'end_date_time', 'end_date']),
+            $candidateEnd,
             $startAt,
-            Carbon::createFromFormat('Y-m-d\TH:i', $fallback['end_datetime'])
+            $fallbackEndAt
         );
 
         $venueName = $this->cleanText(
@@ -310,7 +147,7 @@ PROMPT;
             5000
         );
 
-        return [
+        return $this->ensureFilledPayload([
             'event_title' => $title !== '' ? $title : $fallback['event_title'],
             'short_description' => $shortDescription !== '' ? $shortDescription : $fallback['short_description'],
             'full_description' => $fullDescription !== '' ? $fullDescription : $fallback['full_description'],
@@ -320,7 +157,7 @@ PROMPT;
             'city' => $city,
             'address' => $address,
             'postcode' => $postcode,
-        ];
+        ], $fallback);
     }
 
     private function buildFallbackPayload(UploadedFile $poster): array
@@ -328,7 +165,7 @@ PROMPT;
         $title = $this->deriveTitleFromFilename($poster->getClientOriginalName());
         $locationDefaults = $this->defaultLocationForTitle($title);
         $startAt = $this->defaultStartDateTime();
-        $endAt = $startAt->copy()->addHours(3);
+        $endAt = $startAt->copy()->addHours(2);
 
         return [
             'event_title' => $title,
@@ -367,27 +204,27 @@ PROMPT;
 
         if (Str::contains($title, ['garba', 'kirtan', 'bhajan', 'navratri', 'satsang', 'bollywood'])) {
             return [
-                'venue_name' => 'Riverfront Arena',
-                'city' => 'Ahmedabad',
-                'address' => 'Riverfront Arena, Ashram Road, Ahmedabad',
-                'postcode' => '380001',
+                'venue_name' => 'Satsang Hall',
+                'city' => self::DEFAULT_CITY,
+                'address' => 'Satsang Hall, Adajan Main Road, Surat',
+                'postcode' => self::DEFAULT_POSTCODE,
             ];
         }
 
         if (Str::contains($title, ['summit', 'conference', 'expo', 'business', 'tech'])) {
             return [
-                'venue_name' => 'Exhibition Hall',
-                'city' => 'London',
-                'address' => 'Exhibition Hall, 1 Event Way, London',
-                'postcode' => 'EC1A 1BB',
+                'venue_name' => 'Convention Centre',
+                'city' => self::DEFAULT_CITY,
+                'address' => 'Convention Centre, Vesu Main Road, Surat',
+                'postcode' => self::DEFAULT_POSTCODE,
             ];
         }
 
         return [
             'venue_name' => 'Main Hall',
-            'city' => 'London',
-            'address' => 'Main Hall, City Centre Plaza, London',
-            'postcode' => 'EC1A 1BB',
+            'city' => self::DEFAULT_CITY,
+            'address' => 'Main Hall, City Light Road, Surat',
+            'postcode' => self::DEFAULT_POSTCODE,
         ];
     }
 
@@ -396,15 +233,23 @@ PROMPT;
         return $this->now()->copy()->addDays(14)->setTime(19, 0, 0);
     }
 
-    private function normalizeStartDateTime(?string $value, Carbon $fallback): Carbon
+    private function normalizeStartDateTime(?string $value, ?string $endValue, Carbon $fallback): Carbon
     {
         $parsed = $this->parseDateTime($value);
 
-        if (!$parsed || $parsed->lessThanOrEqualTo($this->now())) {
-            return $fallback;
+        if ($parsed && $parsed->greaterThan($this->now())) {
+            return $parsed;
         }
 
-        return $parsed;
+        $parsedEnd = $this->parseDateTime($endValue);
+        if ($parsedEnd) {
+            $generatedStart = $parsedEnd->copy()->subHours(2);
+            if ($generatedStart->greaterThan($this->now())) {
+                return $generatedStart;
+            }
+        }
+
+        return $fallback;
     }
 
     private function normalizeEndDateTime(?string $value, Carbon $startAt, Carbon $fallback): Carbon
@@ -412,11 +257,11 @@ PROMPT;
         $parsed = $this->parseDateTime($value);
 
         if (!$parsed || $parsed->lessThanOrEqualTo($startAt)) {
-            $parsed = $startAt->copy()->addHours(3);
+            $parsed = $startAt->copy()->addHours(2);
         }
 
         if ($parsed->lessThanOrEqualTo($startAt)) {
-            return $fallback->greaterThan($startAt) ? $fallback : $startAt->copy()->addHours(3);
+            return $fallback->greaterThan($startAt) ? $fallback : $startAt->copy()->addHours(2);
         }
 
         return $parsed;
@@ -549,6 +394,22 @@ PROMPT;
         $cityKey = Str::lower(trim($city));
 
         return self::CITY_POSTCODE_MAP[$cityKey] ?? $fallback;
+    }
+
+    private function ensureFilledPayload(array $payload, array $fallback): array
+    {
+        $normalized = [];
+
+        foreach (self::OUTPUT_KEYS as $key) {
+            $value = isset($payload[$key]) ? trim((string) $payload[$key]) : '';
+            if ($value === '') {
+                $value = trim((string) ($fallback[$key] ?? ''));
+            }
+
+            $normalized[$key] = $value;
+        }
+
+        return $normalized;
     }
 
     private function now(): Carbon
