@@ -414,8 +414,8 @@
   .event-actions {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
     gap: 0.7rem;
+    justify-content: flex-end;
     padding-top: 0.2rem;
   }
 
@@ -1020,6 +1020,28 @@
   <div class="event-card__head">
     <div class="event-card__title-wrap">
       <span class="event-card__icon" aria-hidden="true">
+       <img src="{{ asset('eventicon/faqs.png') }}" alt="">
+      </span>
+      <div>
+        <h2 class="event-card__title">Faqs</h2>
+        <p class="event-card__subtitle">Optional information to enhance your event listing</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="event-grid">
+      <div class="event-field">
+        <label class="event-label">Parking / Transport Info <span class="event-inline-note">(optional)</span></label>
+        <textarea name="parking_info" rows="3" maxlength="1000" class="event-textarea" placeholder="Nearest tube: North Greenwich. Parking available at...">{{ old('parking_info') }}</textarea>
+      </div>
+  </div>
+</section>
+
+
+<section class="event-card">
+  <div class="event-card__head">
+    <div class="event-card__title-wrap">
+      <span class="event-card__icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M4.75 7.75h14.5M4.75 12h14.5M4.75 16.25h14.5"/></svg>
       </span>
       <div>
@@ -1029,27 +1051,22 @@
     </div>
   </div>
 
-  <div class="event-grid">
-    <div class="event-field">
-      <label class="event-label">Parking / Transport Info <span class="event-inline-note">(optional)</span></label>
-      <textarea name="parking_info" rows="3" maxlength="1000" class="event-textarea" placeholder="Nearest tube: North Greenwich. Parking available at...">{{ old('parking_info') }}</textarea>
-    </div>
 
     <div class="event-field">
       <label class="event-label">Refund Policy <span class="event-inline-note">(optional)</span></label>
       <textarea id="refund_policy" name="refund_policy" rows="3" maxlength="1000" class="event-textarea" placeholder="e.g. Tickets are non-refundable but are transferable up to 48 hours before the event.">{{ old('refund_policy') }}</textarea>
       <div class="event-inline-note">Maximum 1000 characters.</div>
     </div>
-  </div>
 </section>
 
-<div class="event-actions">
-  <a href="{{ route('organiser.events.index') }}" class="event-secondary-btn">Cancel</a>
-  <button type="submit" class="event-primary-btn">
-    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5.75 12.75 10 17l8.25-9.25"/></svg>
-    <span>Create Event</span>
-  </button>
-</div>
+    <div class="event-actions">
+      <a href="{{ route('organiser.events.index') }}" class="event-secondary-btn">Cancel</a>
+      <button type="submit" class="event-primary-btn">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5.75 12.75 10 17l8.25-9.25"/></svg>
+        <span>Next - Add Tier</span>
+      </button>
+    </div>
+
 
 </form>
 </div>

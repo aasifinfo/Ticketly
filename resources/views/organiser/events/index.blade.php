@@ -214,6 +214,18 @@
     border: 1px solid var(--events-border);
     background: var(--events-surface);
     box-shadow: var(--events-shadow);
+    cursor: pointer;
+    transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .events-item:hover {
+    border-color: rgba(124, 58, 237, 0.32);
+    transform: translateY(-1px);
+  }
+
+  .events-item:focus-visible {
+    outline: 2px solid rgba(124, 58, 237, 0.35);
+    outline-offset: 2px;
   }
 
   .events-item__media {
@@ -668,9 +680,8 @@
       $statusToggleValue = $event->status === 'published' ? 'draft' : 'published';
       $statusToggleIcon = $approvalStatus === 'rejected' ? 'R' : ($event->status === 'published' ? 'D' : 'P');
       $statusToggleDisabled = $approvalStatus === 'rejected';
-      $canQuickView = $event->status === 'published' && $event->approval_status === 'approved';
     @endphp
-    <article class="events-item">
+    <article class="events-item" data-event-href="{{ route('organiser.events.show', $event->id) }}" role="link" tabindex="0" aria-label="View {{ $event->title }}">
       <div class="events-item__media">
         @if($event->banner_url)
         <img src="{{ $event->banner_url }}" alt="{{ $event->title }}">
@@ -708,11 +719,9 @@
       </div>
 
       <div class="events-item__actions" data-menu-root>
-        @if($canQuickView)
-        <a href="{{ route('events.show', $event->slug) }}" target="_blank" class="events-ghost-action" aria-label="View event">
+        <a href="{{ route('organiser.events.show', $event->id) }}" class="events-ghost-action" aria-label="View event details">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" d="M2.75 12s3.5-6.25 9.25-6.25S21.25 12 21.25 12 17.75 18.25 12 18.25 2.75 12 2.75 12Zm9.25 2.75A2.75 2.75 0 1 0 12 9.25a2.75 2.75 0 0 0 0 5.5Z"></path></svg>
         </a>
-        @endif
 
         <button type="button" class="events-menu-toggle" aria-expanded="false" aria-controls="{{ $menuId }}" onclick="toggleEventMenu(this)">
           <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"></circle><circle cx="12" cy="12" r="1.7"></circle><circle cx="19" cy="12" r="1.7"></circle></svg>
@@ -896,11 +905,35 @@
   });
 
   document.addEventListener('click', function (event) {
+    var eventCard = event.target.closest('[data-event-href]');
+    if (eventCard) {
+      if (event.target.closest('a, button, form, input, select, textarea, label, [data-menu-root]')) {
+        return;
+      }
+
+      window.location.href = eventCard.getAttribute('data-event-href');
+      return;
+    }
+
     const paginationLink = event.target.closest('[data-events-pagination] a');
     if (!paginationLink) return;
 
     event.preventDefault();
     refreshEventsListing(paginationLink.href);
+  });
+
+  document.addEventListener('keydown', function (event) {
+    var eventCard = event.target.closest('[data-event-href]');
+    if (!eventCard) return;
+
+    if (event.target.closest('a, button, form, input, select, textarea, label, [data-menu-root]')) {
+      return;
+    }
+
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+
+    event.preventDefault();
+    window.location.href = eventCard.getAttribute('data-event-href');
   });
 
   window.addEventListener('popstate', function () {

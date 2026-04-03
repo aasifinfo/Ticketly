@@ -6,6 +6,13 @@
   $isMultiDayEvent = $eventEndsAt && ! $eventStartsAt->isSameDay($eventEndsAt);
   $eventStartDisplay = ticketly_format_compact_datetime($eventStartsAt);
   $eventEndDisplay = ticketly_format_compact_datetime($eventEndsAt);
+  $promoDiscountLabel = 'Discount';
+  if ($booking->promoCode) {
+    $promoValue = $booking->promoCode->type === 'percentage'
+      ? ticketly_format_percentage($booking->promoCode->value) . '%'
+      : ticketly_money($booking->promoCode->value);
+    $promoDiscountLabel .= ' (' . $booking->promoCode->code . ' - ' . $promoValue . ')';
+  }
 @endphp
 
 <!DOCTYPE html>
@@ -13,6 +20,9 @@
 <head>
 <meta charset="UTF-8">
 <title>Ticket - {{ $booking->reference }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
 
@@ -24,6 +34,12 @@
 
 body {
   font-size: 10px;
+  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.sheet,
+.sheet * {
+  font-family: inherit;
 }
 
 .sheet {
@@ -318,6 +334,20 @@ table {
             <td>Subtotal</td>
             <td align="right">{{ ticketly_money($booking->subtotal) }}</td>
           </tr>
+          <tr>
+            <td>Portal Fee ({{ $portalFeePercentage }}%)</td>
+            <td align="right">{{ ticketly_money($booking->portal_fee ?? 0) }}</td>
+          </tr>
+          <tr>
+            <td>Service Fee ({{ $serviceFeePercentage }}%)</td>
+            <td align="right">{{ ticketly_money($booking->service_fee ?? 0) }}</td>
+          </tr>
+          @if(($booking->discount_amount ?? 0) > 0)
+          <tr>
+            <td>{{ $promoDiscountLabel }}</td>
+            <td align="right">-{{ ticketly_money($booking->discount_amount) }}</td>
+          </tr>
+          @endif
           <tr>
             <td>Total Paid</td>
             <td align="right"><b>{{ ticketly_money($booking->total) }}</b></td>
