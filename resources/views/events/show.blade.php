@@ -7,14 +7,9 @@
     $venueLine = collect([$event->venue_name, $event->venue_address, $event->city, $event->postcode])->filter()->implode(', ');
     $mapQuery = rawurlencode($venueLine ?: 'Central Park Amphitheater, New York, NY');
     $aboutSource = (string) ($event->description ?: $event->short_description ?: 'Join us for a standout live experience with premium production, unforgettable performances, and an incredible crowd.');
-    $aboutText = preg_replace('/\n{3,}/', "\n\n", trim(html_entity_decode(strip_tags(
-        preg_replace(
-            '/<(?:\/?(?:p|div|h[1-6]|li))[^>]*>|<br\s*\/?>/i',
-            "\n",
-            $aboutSource
-        )
-    ))));
-    $aboutTextHtml = nl2br(e($aboutText));
+    $aboutHtml = trim(strip_tags(html_entity_decode($aboutSource))) !== ''
+        ? strip_tags(html_entity_decode($aboutSource), '<p><br><ul><ol><li><strong><b><em><i><u><a><blockquote><h1><h2><h3><h4><h5><h6>')
+        : '<p>Join us for a standout live experience with premium production, unforgettable performances, and an incredible crowd.</p>';
     $organiserName = $event->organiser->name ?? 'Premier Events Co.';
     $organiserBio = $event->organiser->bio ?: 'We create unforgettable experiences for all audiences.';
     $organiserLogo = $event->organiser->logo_url ?? null;
@@ -26,6 +21,9 @@
         ->mapWithKeys(fn ($item) => [(int) data_get($item, 'ticket_tier_id') => (int) data_get($item, 'quantity', 0)]);
     $eventStartLabel = ticketly_format_compact_datetime($event->starts_at);
     $eventEndLabel = ticketly_format_compact_datetime($event->ends_at);
+    $refundPolicyHtml = trim(strip_tags(html_entity_decode((string) $event->refund_policy))) !== ''
+        ? strip_tags(html_entity_decode((string) $event->refund_policy), '<p><br><ul><ol><li><strong><em><a><blockquote><h1><h2><h3>')
+        : '<p>Full refund available up to 7 days before the event. 50% refund up to 3 days before. No refunds within 72 hours of the event.</p>';
     $lineupItems = collect($event->performer_lineup ?? [])->filter(fn ($item) => filled(data_get($item, 'name')))->values();
     if ($lineupItems->isEmpty()) {
         $lineupItems = collect([
@@ -104,7 +102,7 @@
                             </div>
                             <div class="flex items-start gap-4">
                                 <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-600"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20.5s6.5-5.8 6.5-11A6.5 6.5 0 0 0 5.5 9.5c0 5.2 6.5 11 6.5 11Z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><path d="M12 12.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></div>
-                                <div><p class="text-[1.05rem] font-semibold text-slate-900">{{ $event->venue_name ?: 'Central Park Amphitheater' }}</p><p class="mt-1 text-[1rem] text-slate-500">{{ $venueLine ?: 'Central Park, New York, NY' }}</p></div>
+                                <div><p class="text-[1.05rem] font-semibold text-slate-900">{{ $event->venue_name ?: 'Central Park Amphitheater' }}</p><p class="mt-1 text-[1rem] text-slate-500"><a href="https://www.google.com/maps/search/?api=1&query={{ $mapQuery }}" target="_blank" rel="noopener noreferrer" class="text-inherit">{{ $venueLine ?: 'Central Park, New York, NY' }}</a></p></div>
                             </div>
                         </div>
                     </section>
@@ -112,7 +110,7 @@
                     <section class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-8">
                         <div class="mx-auto w-full max-w-4xl">
                             <h2 class="text-[1.75rem] font-bold tracking-[-0.03em] text-slate-900">About This Event</h2>
-                            <div class="mt-6 break-words text-[1.02rem] leading-8 text-slate-500 md:text-justify [overflow-wrap:anywhere]">{!! $aboutTextHtml !!}</div>
+                            <div class="mt-6 break-words text-[1.02rem] leading-8 text-slate-500 md:text-justify [overflow-wrap:anywhere] [&_a]:underline [&_b]:font-semibold [&_em]:italic [&_h1]:mb-4 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:mb-4 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mb-3 [&_h3]:text-lg [&_h3]:font-semibold [&_h4]:mb-3 [&_h4]:font-semibold [&_h5]:mb-2 [&_h5]:font-semibold [&_h6]:mb-2 [&_h6]:font-semibold [&_i]:italic [&_li]:mt-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-4 [&_strong]:font-semibold [&_u]:underline [&_ul]:list-disc [&_ul]:pl-6">{!! $aboutHtml !!}</div>
                         </div>
                     </section>
 
@@ -159,7 +157,7 @@
 
                     <section class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-8">
                         <h2 class="text-[1.75rem] font-bold tracking-[-0.03em] text-slate-900">Refund Policy</h2>
-                        <p class="mt-6 max-w-4xl text-[1.02rem] leading-8 text-slate-500">{{ $event->refund_policy ?: 'Full refund available up to 7 days before the event. 50% refund up to 3 days before. No refunds within 72 hours of the event.' }}</p>
+                        <div class="mt-6 max-w-4xl text-[1.02rem] leading-8 text-slate-500">{!! $refundPolicyHtml !!}</div>
                     </section>
 
                  <section class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-8">

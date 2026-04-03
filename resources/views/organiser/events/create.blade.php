@@ -812,23 +812,36 @@
     <div class="event-upload__band"></div>
     <div class="event-upload__body">
       <div>
-        <div class="event-upload__title">Do you have an event poster?</div>
-        <div class="event-upload__copy">Upload your poster or banner image here. It will be used as your event banner and visual listing image.</div>
+        <div class="event-upload__title">AI Image</div>
+        <div class="event-upload__copy">Upload your poster and our AI will automatically extract details (title, date, venue, description) and prefill the form.</div>
       </div>
-      <div>
+      <div class="js-file-upload-scope">
         <label class="event-upload__action">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 16V8m0 0-3 3m3-3 3 3M6.75 16.75v.5A1.75 1.75 0 0 0 8.5 19h7a1.75 1.75 0 0 0 1.75-1.75v-.5"/></svg>
-          <span>Upload poster</span>
-          <input type="file" name="banner" id="banner" class="js-banner-input" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp">
+          <span>Upload AI image</span>
+          <input type="file" name="banner_image" id="banner_image" class="js-ai-image-input" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" data-poster-autofill-url="{{ route('organiser.events.poster.parse') }}" data-file-name-selector=".js-ai-image-file-name">
         </label>
-        <div class="event-upload__meta"><span class="js-banner-file-name">No file selected</span><br>PNG, JPG, WebP · Max 4MB</div>
+        <div class="event-upload__meta"><span class="js-ai-image-file-name">No file selected</span><br>PNG, JPG, WebP · Max 4MB</div>
       </div>
     </div>
   </div>
 
-  <div class="event-hint">No poster? No problem, just fill in the fields below.</div>
+  <div class="event-hint">AI image is only used to autofill the form. Event Poster below remains your original listing banner.</div>
 
   <div class="event-grid">
+    <div class="event-field">
+      <label class="event-label">Event Poster</label>
+      <div class="js-file-upload-scope">
+        <label class="event-upload__action">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 16V8m0 0-3 3m3-3 3 3M6.75 16.75v.5A1.75 1.75 0 0 0 8.5 19h7a1.75 1.75 0 0 0 1.75-1.75v-.5"/></svg>
+          <span>Upload poster</span>
+          <input type="file" name="banner" id="banner" class="js-banner-input" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" data-file-name-selector=".js-banner-file-name">
+        </label>
+        <div class="event-upload__meta"><span class="js-banner-file-name">No file selected</span><br>PNG, JPG, WebP · Max 4MB</div>
+      </div>
+      <div class="event-inline-note">This poster is saved as the original event banner and shown across listings.</div>
+    </div>
+
     <div class="event-field">
       <label class="event-label">Event Title *</label>
       <input type="text" name="title" value="{{ old('title') }}" required maxlength="50" class="event-input" placeholder="e.g. Summer Music Festival 2025">
@@ -1024,7 +1037,8 @@
 
     <div class="event-field">
       <label class="event-label">Refund Policy <span class="event-inline-note">(optional)</span></label>
-      <textarea name="refund_policy" rows="3" maxlength="1000" class="event-textarea" placeholder="e.g. Tickets are non-refundable but are transferable up to 48 hours before the event.">{{ old('refund_policy') }}</textarea>
+      <textarea id="refund_policy" name="refund_policy" rows="3" maxlength="1000" class="event-textarea" placeholder="e.g. Tickets are non-refundable but are transferable up to 48 hours before the event.">{{ old('refund_policy') }}</textarea>
+      <div class="event-inline-note">Maximum 1000 characters.</div>
     </div>
   </div>
 </section>
@@ -1046,20 +1060,48 @@
 const serverErrors = @json($errors->getMessages());
 const descriptionField = document.querySelector('#description');
 const descriptionMaxLength = Number(descriptionField?.getAttribute('maxlength')) || 0;
+const refundPolicyField = document.querySelector('#refund_policy');
+const refundPolicyMaxLength = Number(refundPolicyField?.getAttribute('maxlength')) || 0;
+const posterAutofillUrl = @json(route('organiser.events.poster.parse'));
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 let descriptionEditorInstance = null;
 let lastValidDescriptionData = descriptionField?.value || '';
 let isApplyingDescriptionLimit = false;
+let refundPolicyEditorInstance = null;
+let lastValidRefundPolicyData = refundPolicyField?.value || '';
+let isApplyingRefundPolicyLimit = false;
+let pendingAutofillDescription = null;
+let posterAutofillRequestId = 0;
 
 ClassicEditor.create(descriptionField, {
     toolbar: ['heading','|','bold','italic','link','bulletedList','numberedList','|','blockQuote','undo','redo'],
 }).then((editor) => {
     descriptionEditorInstance = editor;
     lastValidDescriptionData = editor.getData();
+
+    if (pendingAutofillDescription !== null) {
+        setDescriptionValue(pendingAutofillDescription);
+        pendingAutofillDescription = null;
+    }
+
     editor.model.document.on('change:data', () => {
         if (!isApplyingDescriptionLimit) {
             enforceDescriptionMaxlength(descriptionField);
         }
         validateMaxlengthField(descriptionField);
+    });
+}).catch(console.error);
+
+ClassicEditor.create(refundPolicyField, {
+    toolbar: ['heading','|','bold','italic','link','bulletedList','numberedList','|','blockQuote','undo','redo'],
+}).then((editor) => {
+    refundPolicyEditorInstance = editor;
+    lastValidRefundPolicyData = editor.getData();
+    editor.model.document.on('change:data', () => {
+        if (!isApplyingRefundPolicyLimit) {
+            enforceRefundPolicyMaxlength(refundPolicyField);
+        }
+        validateMaxlengthField(refundPolicyField);
     });
 }).catch(console.error);
 
@@ -1146,6 +1188,15 @@ function moveDescriptionCursorToEnd() {
     });
 }
 
+function moveRefundPolicyCursorToEnd() {
+    if (!refundPolicyEditorInstance) return;
+
+    refundPolicyEditorInstance.editing.view.focus();
+    refundPolicyEditorInstance.model.change((writer) => {
+        writer.setSelection(refundPolicyEditorInstance.model.document.getRoot(), 'end');
+    });
+}
+
 function enforceDescriptionMaxlength(field) {
     if (!field || !descriptionEditorInstance || !descriptionMaxLength) {
         return true;
@@ -1170,6 +1221,33 @@ function enforceDescriptionMaxlength(field) {
     });
 
     setFieldError(field, `Maximum ${descriptionMaxLength} characters allowed.`);
+    return false;
+}
+
+function enforceRefundPolicyMaxlength(field) {
+    if (!field || !refundPolicyEditorInstance || !refundPolicyMaxLength) {
+        return true;
+    }
+
+    const currentData = refundPolicyEditorInstance.getData();
+    if (getEditorTextFromHtml(currentData).length <= refundPolicyMaxLength) {
+        lastValidRefundPolicyData = currentData;
+        return true;
+    }
+
+    const truncatedData = truncateEditorHtml(currentData, refundPolicyMaxLength) || lastValidRefundPolicyData;
+
+    isApplyingRefundPolicyLimit = true;
+    refundPolicyEditorInstance.setData(truncatedData);
+    lastValidRefundPolicyData = truncatedData;
+
+    requestAnimationFrame(() => {
+        moveRefundPolicyCursorToEnd();
+        isApplyingRefundPolicyLimit = false;
+        validateMaxlengthField(field);
+    });
+
+    setFieldError(field, `Maximum ${refundPolicyMaxLength} characters allowed.`);
     return false;
 }
 
@@ -1426,14 +1504,6 @@ document.querySelectorAll('.js-datetime-input').forEach((input) => {
     setupNativeDateTimeFallback(input);
 });
 
-document.querySelectorAll('.js-banner-input').forEach((input) => {
-    input.addEventListener('change', function () {
-        const fileNameEl = this.closest('.event-upload')?.querySelector('.js-banner-file-name');
-        if (!fileNameEl) return;
-        fileNameEl.textContent = this.files && this.files[0] ? this.files[0].name : 'No file selected';
-    });
-});
-
 document.querySelectorAll('[data-lineup-time]').forEach((field) => {
     setupLineupTimeField(field);
 });
@@ -1457,7 +1527,7 @@ function ensureFieldErrorElement(field) {
 
     const errorEl = document.createElement('p');
     errorEl.className = 'event-field-error';
-    const editor = field.name === 'description' ? field.parentElement?.querySelector('.ck-editor') : null;
+    const editor = ['description', 'refund_policy'].includes(field.name) ? field.parentElement?.querySelector('.ck-editor') : null;
     if (editor) {
         editor.insertAdjacentElement('afterend', errorEl);
     } else {
@@ -1469,7 +1539,7 @@ function ensureFieldErrorElement(field) {
 function setFieldError(field, message) {
     const errorEl = ensureFieldErrorElement(field);
     if (!errorEl) return;
-    const highlightTarget = field.name === 'description'
+    const highlightTarget = ['description', 'refund_policy'].includes(field.name)
         ? field.parentElement?.querySelector('.ck-editor__editable') || field
         : field;
 
@@ -1484,9 +1554,167 @@ function setFieldError(field, message) {
     }
 }
 
+function triggerFieldUpdate(field) {
+    if (!field) return;
+
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    field.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function setInputValue(selector, value) {
+    if (typeof value !== 'string') {
+        return;
+    }
+
+    const field = document.querySelector(selector);
+    if (!field) {
+        return;
+    }
+
+    field.value = value.trim();
+    triggerFieldUpdate(field);
+}
+
+function escapeHtml(value) {
+    const container = document.createElement('div');
+    container.textContent = value;
+    return container.innerHTML;
+}
+
+function textToEditorHtml(value) {
+    return value
+        .split(/\n+/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => `<p>${escapeHtml(line)}</p>`)
+        .join('');
+}
+
+function setDescriptionValue(value) {
+    if (typeof value !== 'string' || !descriptionField) {
+        return;
+    }
+
+    const trimmedValue = value.trim();
+
+    if (!descriptionEditorInstance) {
+        pendingAutofillDescription = trimmedValue;
+        descriptionField.value = trimmedValue;
+        validateMaxlengthField(descriptionField);
+        return;
+    }
+
+    descriptionEditorInstance.setData(textToEditorHtml(trimmedValue));
+    descriptionField.value = trimmedValue;
+    lastValidDescriptionData = descriptionEditorInstance.getData();
+    validateMaxlengthField(descriptionField);
+}
+
+function updateSelectedFileName(input, text) {
+    const scope = input.closest('.js-file-upload-scope');
+    const selector = input.dataset.fileNameSelector || '.js-file-name';
+    const fileNameEl = scope?.querySelector(selector);
+
+    if (!fileNameEl) {
+        return;
+    }
+
+    fileNameEl.textContent = text;
+}
+
+function applyPosterAutofill(payload) {
+    if (!payload || typeof payload !== 'object') {
+        return;
+    }
+
+    setInputValue('input[name="title"]', payload.event_title);
+    setInputValue('input[name="short_description"]', payload.short_description);
+    setDescriptionValue(payload.full_description);
+    setInputValue('input[name="starts_at"]', payload.start_datetime);
+    setInputValue('input[name="ends_at"]', payload.end_datetime);
+
+    if (validationStartInput && validationEndInput) {
+        validationStartInput.dataset.autoManaged = 'true';
+        validationEndInput.dataset.autoManaged = 'true';
+        syncValidationTimes(true);
+    }
+
+    setInputValue('input[name="venue_name"]', payload.venue_name);
+    setInputValue('input[name="city"]', payload.city);
+    setInputValue('input[name="venue_address"]', payload.address);
+    setInputValue('input[name="postcode"]', payload.postcode);
+}
+
+async function requestPosterAutofill(file) {
+    const formData = new FormData();
+    formData.append('poster', file);
+
+    const response = await fetch(posterAutofillUrl, {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+        },
+        credentials: 'same-origin',
+        body: formData,
+    });
+
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok || !payload) {
+        throw new Error(payload?.message || 'Poster autofill failed.');
+    }
+
+    return payload;
+}
+
+document.querySelectorAll('.js-banner-input').forEach((input) => {
+    input.addEventListener('change', function () {
+        const file = this.files && this.files[0] ? this.files[0] : null;
+        updateSelectedFileName(this, file ? file.name : 'No file selected');
+    });
+});
+
+document.querySelectorAll('.js-ai-image-input').forEach((input) => {
+    input.addEventListener('change', async function () {
+        const file = this.files && this.files[0] ? this.files[0] : null;
+
+        updateSelectedFileName(this, file ? `${file.name} - extracting details...` : 'No file selected');
+
+        if (!file) {
+            return;
+        }
+
+        const requestId = ++posterAutofillRequestId;
+
+        try {
+            const payload = await requestPosterAutofill(file);
+
+            if (requestId !== posterAutofillRequestId) {
+                return;
+            }
+
+            applyPosterAutofill(payload);
+            updateSelectedFileName(this, file.name);
+        } catch (error) {
+            if (requestId !== posterAutofillRequestId) {
+                return;
+            }
+
+            updateSelectedFileName(this, file.name);
+            console.error('Poster autofill failed.', error);
+        }
+    });
+});
+
 function getPlainEditorText() {
     if (!descriptionEditorInstance) return descriptionField?.value || '';
     return getEditorTextFromHtml(descriptionEditorInstance.getData());
+}
+
+function getRefundPolicyPlainText() {
+    if (!refundPolicyEditorInstance) return refundPolicyField?.value || '';
+    return getEditorTextFromHtml(refundPolicyEditorInstance.getData());
 }
 
 function validateMaxlengthField(field) {
@@ -1498,7 +1726,10 @@ function validateMaxlengthField(field) {
     if (!maxLength) return true;
 
     const isDescription = field.name === 'description';
-    const valueLength = isDescription ? getPlainEditorText().length : field.value.length;
+    const isRefundPolicy = field.name === 'refund_policy';
+    const valueLength = isDescription
+        ? getPlainEditorText().length
+        : (isRefundPolicy ? getRefundPolicyPlainText().length : field.value.length);
     if (valueLength > maxLength) {
         setFieldError(field, `Maximum ${maxLength} characters allowed.`);
         return false;

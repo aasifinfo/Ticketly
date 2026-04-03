@@ -213,7 +213,7 @@
           @if($event->refund_policy)
           <div class="bg-gray-800/50 border border-gray-800 rounded-2xl p-5">
             <h2 class="text-base font-bold text-white mb-4">Refund Policy</h2>
-            <p class="text-sm text-gray-300 whitespace-pre-line">{{ $event->refund_policy }}</p>
+            <div class="text-sm text-gray-300 whitespace-pre-line">{!! strip_tags(html_entity_decode((string) $event->refund_policy), '<p><br><ul><ol><li><strong><em><a><blockquote><h1><h2><h3>') !!}</div>
           </div>
           @endif
         </div>

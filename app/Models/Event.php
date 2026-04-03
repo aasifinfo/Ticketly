@@ -24,7 +24,7 @@ class Event extends Model
 
     protected $fillable = [
         'organiser_id', 'title', 'slug', 'short_description', 'description',
-        'banner', 'category', 'starts_at', 'ends_at', 'ticket_validation_starts_at', 'ticket_validation_ends_at',
+        'banner', 'banner_image', 'category', 'starts_at', 'ends_at', 'ticket_validation_starts_at', 'ticket_validation_ends_at',
         'venue_name', 'venue_address', 'city', 'country', 'postcode',
         'parking_info', 'performer_lineup', 'refund_policy',
         'status', 'cancelled_at', 'cancellation_reason',
@@ -105,24 +105,17 @@ class Event extends Model
 
     public function getBannerUrlAttribute(): ?string
     {
-        if (!$this->banner) {
-            return null;
-        }
+        return $this->resolveMediaUrl($this->banner, 'uploads/events');
+    }
 
-        if (Str::startsWith($this->banner, ['http://', 'https://'])) {
-            return $this->banner;
-        }
+    public function getAiImageUrlAttribute(): ?string
+    {
+        return $this->resolveMediaUrl($this->banner_image, 'ai_image');
+    }
 
-        if (Str::startsWith($this->banner, 'uploads/')) {
-            return asset($this->banner);
-        }
-
-        $publicCandidate = 'uploads/events/' . basename($this->banner);
-        if (file_exists(base_path($publicCandidate)) || file_exists(public_path($publicCandidate))) {
-            return asset($publicCandidate);
-        }
-
-        return \Illuminate\Support\Facades\Storage::url($this->banner);
+    public function getBannerImageUrlAttribute(): ?string
+    {
+        return $this->resolveMediaUrl($this->banner_image, 'ai_image');
     }
 
     public function getLowestPriceAttribute(): float
@@ -221,5 +214,27 @@ class Event extends Model
             'cancelled' => ['label' => 'Cancelled', 'class' => 'badge--danger'],
             default => ['label' => ucfirst($this->status), 'class' => 'badge--neutral'],
         };
+    }
+
+    private function resolveMediaUrl(?string $path, string $fallbackDirectory): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        if (Str::startsWith($path, ['http://', 'https://'])) {
+            return $path;
+        }
+
+        if (Str::startsWith($path, [$fallbackDirectory . '/', 'uploads/'])) {
+            return asset($path);
+        }
+
+        $publicCandidate = $fallbackDirectory . '/' . basename($path);
+        if (file_exists(base_path($publicCandidate)) || file_exists(public_path($publicCandidate))) {
+            return asset($publicCandidate);
+        }
+
+        return \Illuminate\Support\Facades\Storage::url($path);
     }
 }

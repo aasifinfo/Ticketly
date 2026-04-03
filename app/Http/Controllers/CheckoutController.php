@@ -29,7 +29,7 @@ class CheckoutController extends Controller
     // ── Show checkout ─────────────────────────────────────────────
     public function show(string $token)
     {
-        $reservation = Reservation::with(['event', 'items.ticketTier'])
+        $reservation = Reservation::with(['event', 'items.ticketTier', 'promoCode'])
             ->where('token', $token)
             ->firstOrFail();
 
@@ -56,9 +56,62 @@ class CheckoutController extends Controller
     }
 
     // ── Create / update PaymentIntent ─────────────────────────────
+    public function applyPromo(Request $request, string $token)
+    {
+        $reservation = Reservation::with(['event', 'promoCode'])
+            ->where('token', $token)
+            ->first();
+
+        if (!$reservation || $reservation->status !== 'pending') {
+            return response()->json([
+                'error' => 'Your ticket hold is no longer active.',
+                'expired' => true,
+                'redirect_to' => route('events.index'),
+            ], 422);
+        }
+
+        if ($reservation->isExpired()) {
+            ReservationController::releaseReservation($reservation);
+
+            return response()->json([
+                'error' => 'Your 10-minute ticket hold has expired. Tickets are being released now.',
+                'expired' => true,
+                'redirect_to' => route('events.show', $reservation->event->slug),
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'promo_code' => 'nullable|string|max:100',
+        ]);
+
+        $promoCode = $this->resolveCheckoutPromo(
+            $reservation,
+            (string) ($validated['promo_code'] ?? ''),
+            false
+        );
+
+        $pricing = $this->pricingForReservation($reservation, $promoCode);
+        $this->updateReservationPricing($reservation, $pricing, $promoCode);
+
+        return response()->json([
+            'valid' => true,
+            'code' => $promoCode?->code,
+            'discount' => $pricing['discount'],
+            'gross_total' => $pricing['gross_total'],
+            'portal_fee' => $pricing['portal_fee'],
+            'service_fee' => $pricing['service_fee'],
+            'amount' => $pricing['total'],
+            'message' => $promoCode
+                ? ($promoCode->type === 'percentage'
+                    ? number_format($promoCode->value, 0) . '% discount applied - saving ' . number_format($pricing['discount'], 2)
+                    : number_format($pricing['discount'], 2) . ' discount applied')
+                : 'Promo code removed.',
+        ]);
+    }
+
     public function createIntent(Request $request, string $token)
     {
-        $reservation = Reservation::with(['event', 'items.ticketTier'])
+        $reservation = Reservation::with(['event', 'items.ticketTier', 'promoCode'])
             ->where('token', $token)
             ->first();
 
@@ -82,21 +135,13 @@ class CheckoutController extends Controller
         $validated = $this->validateCheckoutContact($request);
 
         // Promo
-        $subtotal = (float) $reservation->subtotal;
-        $promoCode = null;
-        if (!empty($validated['promo_code'])) {
-            $resolvedPromo = PromoCode::resolveForEvent($reservation->event, (string) $validated['promo_code']);
+        $promoCode = $this->resolveCheckoutPromo(
+            $reservation,
+            (string) ($validated['promo_code'] ?? ''),
+            true
+        );
 
-            if ($resolvedPromo['message']) {
-                throw ValidationException::withMessages([
-                    'promo_code' => $resolvedPromo['message'],
-                ]);
-            }
-
-            $promoCode = $resolvedPromo['promo'];
-        }
-
-        $pricing = ServiceFeeCalculator::totalForPromo($subtotal, $promoCode);
+        $pricing = $this->pricingForReservation($reservation, $promoCode);
 
         $connectedOrganiser = $this->connectedOrganiser($reservation);
         $platformFee = $pricing['portal_fee'] + $pricing['service_fee'];
@@ -117,13 +162,7 @@ class CheckoutController extends Controller
 
         $billingProfile = $this->resolveBillingProfile($request, $customerName);
 
-        $updateData = [
-            'promo_code_id'   => $promoCode?->id,
-            'discount_amount' => $pricing['discount'],
-            'portal_fee'      => $pricing['portal_fee'],
-            'service_fee'     => $pricing['service_fee'],
-            'total'           => $pricing['total'],
-        ];
+        $updateData = [];
         if ($customerName !== null) {
             $updateData['customer_name'] = $customerName;
         }
@@ -133,8 +172,7 @@ class CheckoutController extends Controller
         if ($customerPhone !== null) {
             $updateData['customer_phone'] = $customerPhone;
         }
-        $reservation->update($updateData);
-        $reservation->refresh();
+        $this->updateReservationPricing($reservation, $pricing, $promoCode, $updateData);
 
         $customerName = $reservation->customer_name ? trim((string) $reservation->customer_name) : null;
         $customerEmail = $reservation->customer_email ? trim((string) $reservation->customer_email) : null;
@@ -596,6 +634,68 @@ class CheckoutController extends Controller
             FILTER_VALIDATE_IP,
             FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
         );
+    }
+
+    private function pricingForReservation(Reservation $reservation, ?PromoCode $promoCode): array
+    {
+        return ServiceFeeCalculator::totalForPromo((float) $reservation->subtotal, $promoCode);
+    }
+
+    private function updateReservationPricing(
+        Reservation $reservation,
+        array $pricing,
+        ?PromoCode $promoCode,
+        array $extra = []
+    ): void {
+        $reservation->update(array_merge([
+            'promo_code_id' => $promoCode?->id,
+            'discount_amount' => $pricing['discount'],
+            'portal_fee' => $pricing['portal_fee'],
+            'service_fee' => $pricing['service_fee'],
+            'total' => $pricing['total'],
+        ], $extra));
+
+        $reservation->refresh();
+    }
+
+    private function resolveCheckoutPromo(
+        Reservation $reservation,
+        ?string $rawPromoCode,
+        bool $useExistingWhenBlank = false
+    ): ?PromoCode {
+        $normalizedCode = trim((string) $rawPromoCode);
+
+        if ($normalizedCode === '') {
+            if (
+                $useExistingWhenBlank
+                && $reservation->promoCode
+                && !$reservation->promoCode->trashed()
+                && $reservation->promoCode->isValid()
+                && $reservation->promoCode->isApplicableToEvent($reservation->event)
+            ) {
+                return $reservation->promoCode;
+            }
+
+            return null;
+        }
+
+        $resolvedPromo = PromoCode::resolveForEvent($reservation->event, $normalizedCode);
+
+        if ($resolvedPromo['message']) {
+            throw ValidationException::withMessages([
+                'promo_code' => $resolvedPromo['message'],
+            ]);
+        }
+
+        $promoCode = $resolvedPromo['promo'];
+
+        if (!$promoCode || !$promoCode->isValid()) {
+            throw ValidationException::withMessages([
+                'promo_code' => 'This promo code is invalid, expired, or has reached its usage limit.',
+            ]);
+        }
+
+        return $promoCode;
     }
 
     private function validateCheckoutContact(Request $request): array

@@ -30,7 +30,7 @@
           <span class="text-lg font-extrabold tracking-tight sm:text-xl" style="color:#f5f7fb;">Ticketly</span>
         </a>
 
-        <button id="mobile-menu-toggle" class="ml-auto md:ml-0 md:hidden inline-flex items-center justify-center rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Open menu" aria-expanded="false" style="color:#f5f7fb;">
+        <button id="mobile-menu-toggle" class="ml-auto md:ml-0 md:hidden inline-flex items-center justify-center rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Open menu" aria-controls="mobile-menu" aria-expanded="false" style="color:#f5f7fb;">
           <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
           </svg>
@@ -47,12 +47,12 @@
         </div>
       </div>
 
-      <div id="mobile-menu" class="hidden md:hidden pb-3">
-        <div class="flex flex-col items-center gap-3 pt-2 text-center">
-          <a href="{{ route('home') }}" class="text-sm font-medium transition-colors w-full" style="color:#c5c9d2;" onmouseover="this.style.color='#f5f7fb'" onmouseout="this.style.color='#c5c9d2'">Explore</a>
-          <a href="{{ route('events.index') }}" class="text-sm font-medium transition-colors w-full" style="color:#c5c9d2;" onmouseover="this.style.color='#f5f7fb'" onmouseout="this.style.color='#c5c9d2'">Categories</a>
-          <a href="{{ route('organiser.register') }}" class="text-sm font-medium transition-colors w-full" style="color:#c5c9d2;" onmouseover="this.style.color='#f5f7fb'" onmouseout="this.style.color='#c5c9d2'">Become an Organiser</a>
-          <a href="{{ route('organiser.login') }}" class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900 sm:px-5 sm:text-sm">Login</a>
+      <div id="mobile-menu" class="hidden md:hidden overflow-hidden border-t pb-4 pt-3" style="border-color:rgba(255,255,255,0.08);" aria-hidden="true">
+        <div class="flex flex-col items-stretch gap-2 text-center">
+          <a href="{{ route('home') }}" data-mobile-menu-link class="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-colors" style="color:#c5c9d2;" onmouseover="this.style.color='#f5f7fb'" onmouseout="this.style.color='#c5c9d2'">Explore</a>
+          <a href="{{ route('events.index') }}" data-mobile-menu-link class="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-colors" style="color:#c5c9d2;" onmouseover="this.style.color='#f5f7fb'" onmouseout="this.style.color='#c5c9d2'">Categories</a>
+          <a href="{{ route('organiser.register') }}" data-mobile-menu-link class="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-colors" style="color:#c5c9d2;" onmouseover="this.style.color='#f5f7fb'" onmouseout="this.style.color='#c5c9d2'">Become an Organiser</a>
+          <a href="{{ route('organiser.login') }}" data-mobile-menu-link class="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 text-xs font-semibold text-white transition-all hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-900 sm:px-5 sm:text-sm">Login</a>
         </div>
       </div>
     </div>  </nav>
@@ -136,11 +136,54 @@
   (function () {
     var toggle = document.getElementById('mobile-menu-toggle');
     var menu = document.getElementById('mobile-menu');
+    var menuLinks = document.querySelectorAll('[data-mobile-menu-link]');
     if (!toggle || !menu) return;
+
+    function openMenu() {
+      menu.classList.remove('hidden');
+      menu.setAttribute('aria-hidden', 'false');
+      toggle.setAttribute('aria-expanded', 'true');
+      toggle.setAttribute('aria-label', 'Close menu');
+      document.body.classList.add('overflow-hidden');
+    }
+
+    function closeMenu() {
+      menu.classList.add('hidden');
+      menu.setAttribute('aria-hidden', 'true');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Open menu');
+      document.body.classList.remove('overflow-hidden');
+    }
+
     toggle.addEventListener('click', function () {
       var isHidden = menu.classList.contains('hidden');
-      menu.classList.toggle('hidden');
-      toggle.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+      if (isHidden) {
+        openMenu();
+      } else {
+        closeMenu();
+      }
+    });
+
+    menuLinks.forEach(function (link) {
+      link.addEventListener('click', closeMenu);
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && !menu.classList.contains('hidden')) {
+        closeMenu();
+      }
+    });
+
+    document.addEventListener('click', function (event) {
+      if (menu.classList.contains('hidden')) return;
+      if (menu.contains(event.target) || toggle.contains(event.target)) return;
+      closeMenu();
+    });
+
+    window.addEventListener('resize', function () {
+      if (window.innerWidth >= 768) {
+        closeMenu();
+      }
     });
   })();
 </script>

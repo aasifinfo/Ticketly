@@ -292,6 +292,7 @@
                         <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 max-[375px]:gap-2">
                             <label for="promo-input" class="sr-only">Enter promo code</label>
                             <input id="promo-input" type="text" placeholder="Promo code"
+                                   value="{{ $reservation->promoCode?->code }}"
                                    class="h-14 min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 text-[0.95rem] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100 max-[375px]:h-12 max-[375px]:px-3 max-[375px]:text-[0.9rem] sm:h-16 sm:px-5 sm:text-[1rem]"
                                    style="text-transform:uppercase">
                             <button type="button" id="apply-promo"
@@ -364,6 +365,7 @@
 @section('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const promoApplyUrl = '{{ route('checkout.promo', $reservation->token) }}';
     const intentUrl  = '{{ route('checkout.intent', $reservation->token) }}';
     const statusUrl  = '{{ route('checkout.poll', $reservation->token) }}';
     const checkoutSuccessUrl = '{{ route('checkout.success', $reservation->token) }}';
@@ -384,7 +386,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentClientSecret = null;
     let resolvedBillingProfile = null;
     let isExpired = false;
-    let promoCode = '';
+    let promoCode = @js((string) optional($reservation->promoCode)->code);
     let discountAmount = {{ $initialDiscount }};
     let currentTotal = {{ (float) $initialTotal }};
     const subtotal = {{ (float) $reservation->subtotal }};
@@ -846,31 +848,72 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const code = document.getElementById('promo-input').value.trim().toUpperCase();
-        if (!code) return;
-
-        const res = await fetch('{{ route('promo.validate') }}', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-            body: JSON.stringify({ code, subtotal, event_id: {{ $reservation->event_id }} }),
-        });
-        const data = await res.json();
+        const applyPromoBtn = document.getElementById('apply-promo');
+        const promoInput = document.getElementById('promo-input');
+        const code = promoInput?.value.trim().toUpperCase() || '';
         const resultEl = document.getElementById('promo-result');
 
-        if (data.valid) {
-            promoCode = code;
-            if (hasValidCustomerDetails()) {
-                resultEl.textContent = 'Applied: ' + data.message;
-                resultEl.className = 'mt-3 text-sm text-emerald-600';
-                await fetchIntent({ showLoading: false, showInlineErrors: false });
-            } else {
-                resultEl.textContent = 'Applied: ' + data.message + ' Complete contact information to continue checkout.';
-                resultEl.className = 'mt-3 text-sm text-emerald-600';
-            }
-        } else {
-            resultEl.textContent = 'Payment discount unavailable: ' + data.message;
-            resultEl.className = 'mt-3 text-sm text-rose-600';
+        if (applyPromoBtn) {
+            applyPromoBtn.disabled = true;
         }
+
+        try {
+            const res = await fetch(promoApplyUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ promo_code: code }),
+            });
+
+            const data = await res.json();
+
+            if (data.expired) {
+                handleExpiry(data.error || 'Your hold has expired.', data.redirect_to);
+                return;
+            }
+
+            if (!res.ok || data.valid === false) {
+                const promoError = data?.errors?.promo_code?.[0] || data.message || 'Unable to apply promo code right now.';
+                resultEl.textContent = 'Payment discount unavailable: ' + promoError;
+                resultEl.className = 'mt-3 text-sm text-rose-600';
+                return;
+            }
+
+            promoCode = data.code || '';
+            if (promoInput) {
+                promoInput.value = promoCode;
+            }
+
+            discountAmount = data.discount || 0;
+            currentTotal = data.amount || 0;
+            updateSummaryUI(subtotal, discountAmount, data.portal_fee, data.service_fee, currentTotal);
+
+            resultEl.textContent = promoCode ? 'Applied: ' + data.message : data.message;
+            resultEl.className = 'mt-3 text-sm text-emerald-600';
+
+            if (hasValidCustomerDetails()) {
+                await fetchIntent({ showLoading: false, showInlineErrors: false });
+            }
+        } catch (error) {
+            resultEl.textContent = 'Payment discount unavailable: ' + (error?.message || 'Unable to apply promo code right now.');
+            resultEl.className = 'mt-3 text-sm text-rose-600';
+        } finally {
+            if (applyPromoBtn) {
+                applyPromoBtn.disabled = false;
+            }
+        }
+    });
+
+    document.getElementById('promo-input')?.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') {
+            return;
+        }
+
+        event.preventDefault();
+        document.getElementById('apply-promo')?.click();
     });
 
     document.getElementById('mobile-continue-btn')?.addEventListener('click', () => {

@@ -45,7 +45,7 @@ class ScanValidationController extends Controller
                 'status' => 'error',
                 'type' => 'red',
                 'code' => 'invalid_ticket',
-                'message' => 'Invalid ticket. Please check your ticket or contact support.',
+                'message' => 'Invalid Ticket',
             ], 422);
         }
 
@@ -56,7 +56,7 @@ class ScanValidationController extends Controller
                 'status' => 'error',
                 'type' => 'red',
                 'code' => 'invalid_ticket',
-                'message' => 'Invalid ticket. Please check your ticket or contact support.',
+                'message' => 'Invalid Ticket',
             ], 404);
         }
 

@@ -19,6 +19,7 @@ class EventValidationRules
                 },
             ],
             'banner' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
+            'banner_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
             'category' => 'required|string|max:100',
             'starts_at' => $isUpdate ? 'required|date' : 'required|date|after:now',
             'ends_at' => 'required|date|after:starts_at',
@@ -30,7 +31,15 @@ class EventValidationRules
             'country' => 'nullable|string|max:100',
             'postcode' => 'nullable|string|max:10',
             'parking_info' => 'nullable|string|max:1000',
-            'refund_policy' => 'nullable|string|max:1000',
+            'refund_policy' => [
+                'nullable',
+                'string',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    if (mb_strlen(trim(strip_tags((string) $value))) > 1000) {
+                        $fail('The refund policy may not be greater than 1000 characters.');
+                    }
+                },
+            ],
             'lineup_names' => 'nullable|array',
             'lineup_names.*' => 'nullable|string|max:50',
             'lineup_roles' => 'nullable|array',

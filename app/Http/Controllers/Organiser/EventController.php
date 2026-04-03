@@ -7,8 +7,10 @@ use App\Jobs\SendEventCancellationNotification;
 use App\Models\Booking;
 use App\Models\Event;
 use App\Models\TicketTier;
+use App\Services\PosterAutofillService;
 use App\Support\EventValidationRules;
 use App\Services\RefundService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -66,6 +68,17 @@ class EventController extends Controller
         return view('organiser.events.create', compact('organiser'));
     }
 
+    public function parsePoster(Request $request, PosterAutofillService $posterAutofillService): JsonResponse
+    {
+        $request->validate([
+            'poster' => 'required|image|mimes:jpg,jpeg,png,webp|max:4096',
+        ]);
+
+        return response()->json(
+            $posterAutofillService->extractDetails($request->file('poster'))
+        );
+    }
+
     public function show(Request $request, int $id)
     {
         $organiser = $request->attributes->get('organiser');
@@ -94,6 +107,9 @@ class EventController extends Controller
         // Handle banner upload
         if ($request->hasFile('banner')) {
             $validated['banner'] = $this->storeBannerFile($request->file('banner'));
+        }
+        if ($request->hasFile('banner_image')) {
+            $validated['banner_image'] = $this->storeAiImageFile($request->file('banner_image'));
         }
 
         $validated['organiser_id'] = $organiser->id;
@@ -126,6 +142,10 @@ class EventController extends Controller
             $this->deleteBannerFile($event->banner);
             $validated['banner'] = $this->storeBannerFile($request->file('banner'));
         }
+        if ($request->hasFile('banner_image')) {
+            $this->deleteAiImageFile($event->banner_image);
+            $validated['banner_image'] = $this->storeAiImageFile($request->file('banner_image'));
+        }
 
         $validated['performer_lineup'] = $this->parseLineup($request);
         $event->update($validated);
@@ -145,6 +165,7 @@ class EventController extends Controller
         }
 
         $this->deleteBannerFile($event->banner);
+        $this->deleteAiImageFile($event->banner_image);
         $event->delete();
 
         return redirect()->route('organiser.events.index')
@@ -283,6 +304,19 @@ class EventController extends Controller
         return 'uploads/events/' . $filename;
     }
 
+    private function storeAiImageFile(\Illuminate\Http\UploadedFile $file): string
+    {
+        $directory = public_path('ai_image');
+        if (!File::exists($directory)) {
+            File::makeDirectory($directory, 0755, true);
+        }
+
+        $filename = (string) Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $file->move($directory, $filename);
+
+        return 'ai_image/' . $filename;
+    }
+
     private function deleteBannerFile(?string $banner): void
     {
         if (!$banner) {
@@ -290,6 +324,18 @@ class EventController extends Controller
         }
 
         $path = $this->resolveBannerPath($banner);
+        if ($path && File::exists($path)) {
+            File::delete($path);
+        }
+    }
+
+    private function deleteAiImageFile(?string $aiImage): void
+    {
+        if (!$aiImage) {
+            return;
+        }
+
+        $path = $this->resolveAiImagePath($aiImage);
         if ($path && File::exists($path)) {
             File::delete($path);
         }
@@ -317,6 +363,19 @@ class EventController extends Controller
         }
 
         return public_path($fallback);
+    }
+
+    private function resolveAiImagePath(string $aiImage): ?string
+    {
+        if (str_starts_with($aiImage, 'http://') || str_starts_with($aiImage, 'https://')) {
+            return null;
+        }
+
+        if (str_starts_with($aiImage, 'ai_image/')) {
+            return public_path($aiImage);
+        }
+
+        return public_path('ai_image/' . basename($aiImage));
     }
 
     private function getUploadsRoot(): string

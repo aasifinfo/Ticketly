@@ -220,4 +220,41 @@ class PromoCodeOrganiserScopeTest extends TestCase
 
         $this->assertSame('This promo code is not valid for this event.', $response->json('errors.promo_code.0'));
     }
+
+    public function test_checkout_promo_endpoint_applies_discount_before_contact_details(): void
+    {
+        config([
+            'ticketly.portal_fee_percentage' => 10,
+            'ticketly.service_fee_percentage' => 5,
+        ]);
+
+        $organiser = $this->makeOrganiser('apply');
+        $event = $this->makeEvent($organiser, 'apply');
+        $promo = $this->makePromo($organiser, 'SAVE20', $event, [
+            'type' => 'percentage',
+            'value' => 20,
+        ]);
+        $reservation = $this->makeReservation($event, '4fe561d7-b34b-45a8-a44e-456af77561b5');
+
+        $response = $this->postJson(route('checkout.promo', $reservation->token), [
+            'promo_code' => 'save20',
+        ]);
+
+        $response->assertOk()->assertJson([
+            'valid' => true,
+            'code' => 'SAVE20',
+            'gross_total' => 115.0,
+            'discount' => 23.0,
+            'amount' => 92.0,
+            'message' => '20% discount applied - saving 23.00',
+        ]);
+
+        $reservation->refresh();
+
+        $this->assertSame($promo->id, $reservation->promo_code_id);
+        $this->assertSame('23.00', $reservation->discount_amount);
+        $this->assertSame('10.00', $reservation->portal_fee);
+        $this->assertSame('5.00', $reservation->service_fee);
+        $this->assertSame('92.00', $reservation->total);
+    }
 }

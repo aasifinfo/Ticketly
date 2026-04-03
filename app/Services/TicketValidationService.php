@@ -18,7 +18,7 @@ class TicketValidationService
                     status: 'error',
                     type: 'red',
                     code: 'invalid_ticket',
-                    message: 'Invalid ticket. Please check your ticket or contact support.',
+                    message: 'Invalid Ticket',
                     statusCode: 404,
                     booking: null
                 );
@@ -31,7 +31,7 @@ class TicketValidationService
                     status: 'error',
                     type: 'red',
                     code: 'invalid_ticket',
-                    message: 'Invalid ticket. Please check your ticket or contact support.',
+                    message: 'Invalid Organizer Ticket',
                     statusCode: 403,
                     booking: $booking,
                     exposeBooking: false
@@ -43,7 +43,7 @@ class TicketValidationService
                     status: 'error',
                     type: 'red',
                     code: 'cancelled_or_refunded',
-                    message: 'This ticket has been cancelled or refunded.',
+                    message: 'Ticket Not Valid',
                     statusCode: 422,
                     booking: $booking
                 );
@@ -58,7 +58,7 @@ class TicketValidationService
                     status: 'error',
                     type: 'red',
                     code: 'entry_not_started',
-                    message: 'Entry not started yet. Ticket scanning will begin at ' . ticketly_format_datetime($validationStartsAt) . '.',
+                    message: 'Ticket Scanned Too Early',
                     statusCode: 422,
                     booking: $booking
                 );
@@ -69,7 +69,7 @@ class TicketValidationService
                     status: 'error',
                     type: 'red',
                     code: 'entry_closed',
-                    message: 'Entry closed. Scanning time ended at ' . ticketly_format_datetime($validationEndsAt) . '.',
+                    message: 'Ticket Expired',
                     statusCode: 422,
                     booking: $booking
                 );
@@ -80,7 +80,7 @@ class TicketValidationService
                     status: 'error',
                     type: 'red',
                     code: 'invalid_ticket',
-                    message: 'Invalid ticket. Please check your ticket or contact support.',
+                    message: 'Invalid Ticket',
                     statusCode: 422,
                     booking: $booking
                 );
@@ -91,7 +91,7 @@ class TicketValidationService
                     status: 'error',
                     type: 'orange',
                     code: 'already_used',
-                    message: 'This ticket has already been used.',
+                    message: 'Ticket Already Used',
                     statusCode: 409,
                     booking: $booking,
                     scannedAt: $booking->scanned_at
@@ -109,7 +109,7 @@ class TicketValidationService
                 status: 'success',
                 type: 'green',
                 code: 'verified',
-                message: 'Ticket verified successfully.',
+                message: 'Ticket Verified',
                 statusCode: 200,
                 booking: $booking,
                 scannedAt: $scannedAt

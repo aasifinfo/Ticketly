@@ -104,6 +104,7 @@ class EventController extends Controller
         }
 
         $this->deleteBannerFile($event->banner);
+        $this->deleteAiImageFile($event->banner_image);
         $event->delete();
 
         return redirect()->route('admin.events.index')
@@ -242,6 +243,18 @@ class EventController extends Controller
         }
     }
 
+    private function deleteAiImageFile(?string $aiImage): void
+    {
+        if (!$aiImage) {
+            return;
+        }
+
+        $path = $this->resolveAiImagePath($aiImage);
+        if ($path && File::exists($path)) {
+            File::delete($path);
+        }
+    }
+
     private function resolveBannerPath(string $banner): ?string
     {
         if (str_starts_with($banner, 'http://') || str_starts_with($banner, 'https://')) {
@@ -264,6 +277,19 @@ class EventController extends Controller
         }
 
         return public_path($fallback);
+    }
+
+    private function resolveAiImagePath(string $aiImage): ?string
+    {
+        if (str_starts_with($aiImage, 'http://') || str_starts_with($aiImage, 'https://')) {
+            return null;
+        }
+
+        if (str_starts_with($aiImage, 'ai_image/')) {
+            return public_path($aiImage);
+        }
+
+        return public_path('ai_image/' . basename($aiImage));
     }
 
     private function getUploadsRoot(): string

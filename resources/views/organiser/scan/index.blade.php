@@ -432,15 +432,17 @@
       const data = await response.json().catch(() => ({}));
       const type = data.type || 'red';
       const titleMap = {
-        green: 'Ticket verified',
-        orange: 'Ticket already used',
-        red: 'Ticket validation failed',
+        verified: 'Ticket Verified',
+        already_used: 'Ticket Already Used',
+        entry_not_started: 'Ticket Scanned Too Early',
+        entry_closed: 'Ticket Expired',
+        cancelled_or_refunded: 'Ticket Not Valid',
       };
 
       showResult({
         type,
-        title: titleMap[type] || 'Ticket scan result',
-        message: data.message || 'Unable to validate this ticket.',
+        title: titleMap[data.code] || data.message || (type === 'green' ? 'Ticket Verified' : 'Ticket Invalid'),
+        message: data.message || (type === 'green' ? 'Ticket Verified' : 'Ticket Invalid'),
         details: {
           'Event': data.event_title,
           'Ticket UUID': data.ticket_uuid,
@@ -621,12 +623,12 @@
       <section class="scanner-card p-5 sm:p-6">
         <h2 class="text-lg font-bold text-slate-950">Validation Rules</h2>
         <ul class="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-          <li class="scanner-note">Before validation start: red result with the configured start time.</li>
-          <li class="scanner-note">After validation end: red result with the configured end time.</li>
-          <li class="scanner-note">Wrong organiser ticket: red result with a generic invalid ticket message.</li>
-          <li class="scanner-note">Cancelled or refunded ticket: red result and no entry allowed.</li>
-          <li class="scanner-note">Already used ticket: orange result to prevent duplicate entry.</li>
-          <li class="scanner-note">First valid scan: green result and the ticket is marked used immediately.</li>
+          <li class="scanner-note">Before validation start: red result with Ticket Scanned Too Early.</li>
+          <li class="scanner-note">After validation end: red result with Ticket Expired.</li>
+          <li class="scanner-note">Wrong organiser ticket: red result with Invalid Organizer Ticket.</li>
+          <li class="scanner-note">Cancelled or refunded ticket: red result with Ticket Not Valid.</li>
+          <li class="scanner-note">Already used ticket: orange result with Ticket Already Used.</li>
+          <li class="scanner-note">First valid scan: green result with Ticket Verified.</li>
         </ul>
       </section>
     </aside>
@@ -682,8 +684,8 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M5 12.5l4.2 4.2L19 7"></path>
         </svg>
       </div>
-      <h3 id="result-title" class="text-2xl font-black tracking-[-0.03em] text-slate-950">Ticket verified</h3>
-      <p id="result-message" class="scan-result-message mt-4">Ticket verified successfully.</p>
+      <h3 id="result-title" class="text-2xl font-black tracking-[-0.03em] text-slate-950">Ticket Verified</h3>
+      <p id="result-message" class="scan-result-message mt-4">Ticket Verified</p>
       <div id="result-details" class="scan-result-details"></div>
     </div>
   </div>

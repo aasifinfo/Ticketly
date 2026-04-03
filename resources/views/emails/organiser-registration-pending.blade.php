@@ -13,7 +13,6 @@
     .body { padding: 24px; }
     .body p { margin: 0 0 14px; line-height: 1.65; color: #d1d5db; }
     .note { margin-top: 16px; padding: 14px; border-radius: 10px; background: #0f1f15; border: 1px solid #14532d; color: #bbf7d0; }
-    .cta { display: inline-block; margin-top: 16px; padding: 11px 16px; border-radius: 8px; color: #fff; background: #4f46e5; text-decoration: none; font-weight: 700; }
     .foot { padding: 18px 24px; border-top: 1px solid #1f2937; color: #9ca3af; font-size: 12px; }
     .foot a { color: #818cf8; text-decoration: none; }
   </style>
@@ -31,7 +30,7 @@
         <div class="note">
           Account email: <strong>{{ $organiser->email }}</strong>
         </div>
-        <a class="cta" href="{{ route('organiser.login') }}">Go to Organiser Login</a>
+        <a style="display: inline-block; margin-top: 16px; padding: 11px 16px; border-radius: 8px; color: #fff; background: #4f46e5; text-decoration: none; font-weight: 700;" href="{{ route('organiser.login') }}">Go to Organiser Login</a>
       </div>
       <div class="foot">
         Ticketly Team<br>

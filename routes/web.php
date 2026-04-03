@@ -41,6 +41,7 @@ Route::get('/organiser/scan', [ScanController::class, 'index'])->name('organiser
 Route::post('/reserve', [ReservationController::class, 'store'])->name('reservation.store');
 Route::delete('/reserve/{token}', [ReservationController::class, 'release'])->name('reservation.release');
 Route::get('/checkout/{token}', [CheckoutController::class, 'show'])->name('checkout.show');
+Route::post('/checkout/{token}/promo', [CheckoutController::class, 'applyPromo'])->name('checkout.promo');
 Route::post('/checkout/{token}/intent', [CheckoutController::class, 'createIntent'])->name('checkout.intent');
 Route::get('/checkout/{token}/poll', [CheckoutController::class, 'pollStatus'])->name('checkout.poll');
 Route::get('/checkout/{token}/success', [CheckoutController::class, 'success'])->name('checkout.success');
@@ -129,6 +130,7 @@ Route::middleware(['organiser.auth'])->group(function () {
 
     Route::get('/organiser/events', [OrganiserEventController::class, 'index'])->name('organiser.events.index');
     Route::get('/organiser/events/create', [OrganiserEventController::class, 'create'])->name('organiser.events.create');
+    Route::post('/organiser/events/poster/autofill', [OrganiserEventController::class, 'parsePoster'])->name('organiser.events.poster.parse');
     Route::get('/organiser/events/{id}', [OrganiserEventController::class, 'show'])->name('organiser.events.show');
     Route::post('/organiser/events', [OrganiserEventController::class, 'store'])->name('organiser.events.store');
     Route::get('/organiser/events/{id}/edit', [OrganiserEventController::class, 'edit'])->name('organiser.events.edit');

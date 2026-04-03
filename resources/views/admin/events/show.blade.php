@@ -193,7 +193,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
             <div class="text-xs uppercase tracking-wider text-gray-500">Refund Policy</div>
-            <div class="mt-1 text-gray-300 whitespace-pre-line">{{ $event->refund_policy ?? 'Not specified.' }}</div>
+            <div class="mt-1 text-gray-300 whitespace-pre-line">{!! $event->refund_policy ? strip_tags(html_entity_decode((string) $event->refund_policy), '<p><br><ul><ol><li><strong><em><a><blockquote><h1><h2><h3>') : 'Not specified.' !!}</div>
           </div>
           <div>
             <div class="text-xs uppercase tracking-wider text-gray-500">Parking Info</div>

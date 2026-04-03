@@ -85,7 +85,7 @@ class ScanValidationTest extends TestCase
                 'status' => 'success',
                 'type' => 'green',
                 'code' => 'verified',
-                'message' => 'Ticket verified successfully.',
+                'message' => 'Ticket Verified',
                 'ticket_uuid' => $booking->ticket_uuid,
                 'booking_reference' => $booking->reference,
             ]);
@@ -156,7 +156,7 @@ class ScanValidationTest extends TestCase
                 'status' => 'success',
                 'type' => 'green',
                 'code' => 'verified',
-                'message' => 'Ticket verified successfully.',
+                'message' => 'Ticket Verified',
             ]);
     }
 
@@ -179,7 +179,7 @@ class ScanValidationTest extends TestCase
                 'status' => 'error',
                 'type' => 'red',
                 'code' => 'invalid_ticket',
-                'message' => 'Invalid ticket. Please check your ticket or contact support.',
+                'message' => 'Invalid Organizer Ticket',
             ]);
     }
 
@@ -202,7 +202,7 @@ class ScanValidationTest extends TestCase
                 'status' => 'error',
                 'type' => 'red',
                 'code' => 'entry_not_started',
-                'message' => 'Entry not started yet. Ticket scanning will begin at ' . ticketly_format_datetime($booking->event->ticketValidationStartsAt()) . '.',
+                'message' => 'Ticket Scanned Too Early',
             ]);
     }
 
@@ -225,7 +225,7 @@ class ScanValidationTest extends TestCase
                 'status' => 'error',
                 'type' => 'red',
                 'code' => 'entry_closed',
-                'message' => 'Entry closed. Scanning time ended at ' . ticketly_format_datetime($booking->event->ticketValidationEndsAt()) . '.',
+                'message' => 'Ticket Expired',
             ]);
     }
 
@@ -246,7 +246,7 @@ class ScanValidationTest extends TestCase
                 'status' => 'error',
                 'type' => 'red',
                 'code' => 'cancelled_or_refunded',
-                'message' => 'This ticket has been cancelled or refunded.',
+                'message' => 'Ticket Not Valid',
             ]);
     }
 
@@ -271,7 +271,7 @@ class ScanValidationTest extends TestCase
                 'status' => 'error',
                 'type' => 'orange',
                 'code' => 'already_used',
-                'message' => 'This ticket has already been used.',
+                'message' => 'Ticket Already Used',
             ]);
     }
 

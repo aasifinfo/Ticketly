@@ -51,7 +51,7 @@ class PublicEventShowTest extends TestCase
         $response->assertOk();
         $response->assertSee('Start: 28 Mar 2026, 5:00 PM');
         $response->assertSee('End: 29 Mar 2026, 1:00 AM');
-        $response->assertSee('First paragraph.<br />', false);
-        $response->assertSee('Second paragraph.', false);
+        $response->assertSee('<p>First paragraph.</p>', false);
+        $response->assertSee('<p>Second paragraph.</p>', false);
     }
 }

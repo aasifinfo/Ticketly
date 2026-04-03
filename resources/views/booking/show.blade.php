@@ -14,8 +14,8 @@
     $eventLocation = collect([$booking->event->venue_name, $booking->event->city])->filter()->implode(', ');
     $portalFeePercentage = ticketly_format_percentage(ticketly_setting('portal_fee_percentage', config('ticketly.portal_fee_percentage', 10)));
     $serviceFeePercentage = ticketly_format_percentage(ticketly_setting('service_fee_percentage', config('ticketly.service_fee_percentage', 5)));
-    $refundPolicyText = trim((string) $booking->event->refund_policy) !== ''
-        ? $booking->event->refund_policy
+    $refundPolicyText = trim(strip_tags(html_entity_decode((string) $booking->event->refund_policy))) !== ''
+        ? trim(strip_tags(html_entity_decode((string) $booking->event->refund_policy)))
         : 'Free cancellation up to 24h before event';
 @endphp
 

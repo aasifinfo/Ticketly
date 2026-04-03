@@ -31,4 +31,13 @@ return [
     'scanner' => [
         'token' => env('SCANNER_API_KEY'),
     ],
+    'poster_ai' => [
+        'provider' => env('POSTER_AI_PROVIDER', 'groq'),
+        'groq' => [
+            'api_key' => env('GROQ_API_KEY'),
+            'model' => env('GROQ_POSTER_MODEL', 'meta-llama/llama-4-scout-17b-16e-instruct'),
+            'url' => env('GROQ_API_URL', 'https://api.groq.com/openai/v1/chat/completions'),
+            'timeout' => (int) env('GROQ_API_TIMEOUT', 30),
+        ],
+    ],
 ];
