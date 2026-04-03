@@ -15,6 +15,9 @@
     #card-element .__PrivateStripeElement {
         width: 100%;
     }
+    .mobile-checkout-cta {
+        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+    }
 </style>
 @endsection
 
@@ -49,7 +52,7 @@
         </div>
     </section>
 
-    <div class="mx-auto max-w-[1480px] px-4 pb-10 pt-6 max-[375px]:px-3 sm:px-6 lg:px-8 lg:py-8">
+    <div class="mx-auto max-w-[1480px] px-4 pb-32 pt-6 max-[375px]:px-3 sm:px-6 sm:pb-36 lg:px-8 lg:py-8">
         @if(session('payment_cancelled'))
             <div class="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800" role="alert" aria-live="polite">
                 <svg class="mt-0.5 h-4 w-4 shrink-0 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -113,7 +116,7 @@
                     </div>
                 </section>
 
-                <section id="contact-section" class="rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_10px_30px_rgba(15,23,42,0.04)] max-[375px]:rounded-[24px] max-[375px]:p-4 sm:p-8">
+                <section id="contact-section" class="scroll-mt-6 rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_10px_30px_rgba(15,23,42,0.04)] max-[375px]:rounded-[24px] max-[375px]:p-4 sm:p-8">
                     <div class="flex items-start justify-between gap-3 max-[375px]:gap-2">
                         <h2 class="text-[1.45rem] font-extrabold tracking-[-0.04em] text-slate-900 max-[375px]:text-[1.25rem] sm:text-[1.6rem]">Contact Information</h2>
                         <span class="shrink-0 text-sm font-semibold text-rose-600 max-[375px]:text-xs"><span aria-hidden="true">*</span> Required</span>
@@ -313,13 +316,20 @@
                     </div>
                 </div>
 
-                <button id="mobile-continue-btn" type="button"
-                        class="mt-6 inline-flex h-16 w-full items-center justify-center rounded-2xl bg-[linear-gradient(90deg,#7c3aed,#8b5cf6)] px-6 text-[1.02rem] font-medium text-white shadow-[0_18px_45px_rgba(124,58,237,0.24)] max-[375px]:h-14 max-[375px]:text-[0.95rem] sm:h-[70px] sm:text-[1.08rem] lg:hidden" style="color:#ffffff !important;">
-                    Continue to Payment
-                </button>
+                <div id="mobile-continue-bar"
+                     class="mobile-checkout-cta fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-4 pt-4 shadow-[0_-18px_40px_rgba(15,23,42,0.08)] backdrop-blur transition duration-300 lg:hidden max-[375px]:px-3 sm:px-6">
+                    <div class="mx-auto max-w-[1480px]">
+                        <button id="mobile-continue-btn" type="button" aria-controls="contact-section"
+                                onclick="window.location.hash='contact-section';document.getElementById('contact-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });"
+                                class="inline-flex h-16 w-full items-center justify-center rounded-2xl bg-[linear-gradient(90deg,#7c3aed,#8b5cf6)] px-6 text-[1.02rem] font-medium text-white shadow-[0_18px_45px_rgba(124,58,237,0.24)] max-[375px]:h-14 max-[375px]:text-[0.95rem] sm:h-[70px] sm:text-[1.08rem]"
+                                style="color:#ffffff !important;">
+                            Continue to Payment
+                        </button>
 
-                <div class="mt-6 text-center text-[0.95rem] text-slate-400 max-[375px]:text-[0.85rem] lg:hidden">
-                    Secure checkout | Tickets delivered instantly
+                        <div class="mt-3 text-center text-[0.95rem] text-slate-400 max-[375px]:text-[0.85rem]">
+                            Secure checkout | Tickets delivered instantly
+                        </div>
+                    </div>
                 </div>
 
                 <div class="mt-7 rounded-[28px] border border-slate-200 bg-white px-6 py-7 text-center shadow-[0_10px_30px_rgba(15,23,42,0.04)] max-[375px]:px-4 max-[375px]:py-5 lg:hidden">
@@ -916,9 +926,33 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('apply-promo')?.click();
     });
 
+    const mobileContinueBar = document.getElementById('mobile-continue-bar');
+    const contactSection = document.getElementById('contact-section');
+    const paymentSection = document.getElementById('payment-section');
+
     document.getElementById('mobile-continue-btn')?.addEventListener('click', () => {
-        document.getElementById('payment-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        contactSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+
+    function refreshMobileContinueBarVisibility() {
+        if (!mobileContinueBar || !paymentSection) return;
+
+        if (window.innerWidth >= 1024) {
+            mobileContinueBar.classList.add('translate-y-full', 'opacity-0', 'pointer-events-none');
+            return;
+        }
+
+        const paymentSectionTop = paymentSection.getBoundingClientRect().top;
+        const shouldHide = paymentSectionTop <= Math.max(window.innerHeight * 0.7, 320);
+
+        mobileContinueBar.classList.toggle('translate-y-full', shouldHide);
+        mobileContinueBar.classList.toggle('opacity-0', shouldHide);
+        mobileContinueBar.classList.toggle('pointer-events-none', shouldHide);
+    }
+
+    refreshMobileContinueBarVisibility();
+    window.addEventListener('scroll', refreshMobileContinueBarVisibility, { passive: true });
+    window.addEventListener('resize', refreshMobileContinueBarVisibility);
 
     document.getElementById('pay-btn')?.addEventListener('click', async () => {
         if (lockPayButton) return;

@@ -39,6 +39,7 @@
         ['What is the minimum age requirement to attend the event?', $event->age_requirement ? "This event is {$event->age_requirement}+" : 'Age must be 18+ or for under 18 must be accompanied by a Parent or Guardian.'],
     ];
     $interestedCount = max(1200, (int) $event->ticketTiers->sum('sold_quantity') * 8);
+    $hasSelectableTickets = !$event->isCancelled() && !$event->starts_at->isPast() && $event->ticketTiers->isNotEmpty();
 @endphp
 
 <div class="event-page-shell bg-[#ffffff] text-slate-900">
@@ -79,7 +80,7 @@
         </div>
     </section>
 
-    <div class="relative z-10 -mt-10 pb-14 sm:-mt-16 sm:pb-20">
+    <div class="relative z-10 -mt-10 pb-32 sm:-mt-16 sm:pb-36 lg:pb-20">
         <div class="event-page-container mx-auto max-w-[1440px] px-2 sm:px-4 lg:px-4">
             @if($errors->any())
                 <div class="mb-6 rounded-[22px] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700 shadow-[0_20px_45px_rgba(239,68,68,0.08)]">
@@ -273,7 +274,7 @@
                     @elseif($event->ticketTiers->isEmpty())
                         <div class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-6"><h2 class="text-[1.55rem] font-bold tracking-[-0.03em] text-slate-900 sm:text-[2rem]">Tickets Coming Soon</h2><p class="mt-4 text-[1rem] leading-7 text-slate-500">Tickets for this event are not available yet. Please check back later.</p></div>
                     @else
-                        <div class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-6">
+                        <div id="select-tickets-section" class="scroll-mt-24 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-6">
                             <h2 class="text-[1.75rem] font-bold tracking-[-0.03em] text-slate-900">Select Tickets</h2>
                             @if($activeReservationToken)
                                 <div data-active-reservation-alert class="mt-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-700">
@@ -358,6 +359,25 @@
             </div>
         </div>
     </div>
+
+    @if($hasSelectableTickets)
+        <div id="mobile-ticket-cta"
+             class="event-mobile-ticket-cta fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-4 pt-4 shadow-[0_-18px_40px_rgba(15,23,42,0.08)] backdrop-blur transition duration-300 lg:hidden sm:px-6">
+            <div class="mx-auto max-w-[1440px]">
+                <a id="mobile-ticket-cta-link"
+                   href="#select-tickets-section"
+                   aria-controls="select-tickets-section"
+                   class="inline-flex h-16 w-full items-center justify-center rounded-2xl bg-[linear-gradient(90deg,#7c3aed,#8b5cf6)] px-6 text-[1.02rem] font-medium text-white shadow-[0_18px_45px_rgba(124,58,237,0.24)] max-[375px]:h-14 max-[375px]:text-[0.95rem] sm:h-[70px] sm:text-[1.08rem]"
+                   style="color:#ffffff !important;">
+                    Select Tickets
+                </a>
+
+                <div class="mt-3 text-center text-[0.95rem] text-slate-400 max-[375px]:text-[0.85rem]">
+                    Choose your tickets and continue booking
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
 @endsection
 
@@ -365,6 +385,10 @@
 <style>
     body {
         overflow-x: hidden;
+    }
+
+    .event-mobile-ticket-cta {
+        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
     }
 
     @media (max-width: 639px) {
@@ -451,6 +475,29 @@ document.getElementById('ticket-form')?.addEventListener('submit', (e) => { if (
 document.querySelectorAll('.faq-toggle').forEach((btn) => btn.addEventListener('click', function () { const answer = this.nextElementSibling, icon = this.querySelector('svg'), open = this.getAttribute('aria-expanded') === 'true'; this.setAttribute('aria-expanded', open ? 'false' : 'true'); answer?.classList.toggle('hidden', open); icon?.classList.toggle('rotate-180', !open); }));
 document.getElementById('favorite-event-button')?.addEventListener('click', function () { const pressed = this.getAttribute('aria-pressed') === 'true'; this.setAttribute('aria-pressed', pressed ? 'false' : 'true'); this.classList.toggle('text-red-500', !pressed); });
 document.getElementById('share-event-button')?.addEventListener('click', async function () { const url = window.location.href, data = { title: @json($event->title), url }; if (navigator.share) { try { await navigator.share(data); return; } catch (error) {} } try { await navigator.clipboard.writeText(url); this.classList.add('text-violet-600'); setTimeout(() => this.classList.remove('text-violet-600'), 1200); } catch (error) {} });
+const mobileTicketCta = document.getElementById('mobile-ticket-cta');
+const mobileTicketCtaLink = document.getElementById('mobile-ticket-cta-link');
+const selectTicketsSection = document.getElementById('select-tickets-section');
+mobileTicketCtaLink?.addEventListener('click', (event) => {
+    event.preventDefault();
+    window.location.hash = 'select-tickets-section';
+    selectTicketsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+function refreshMobileTicketCtaVisibility() {
+    if (!mobileTicketCta || !selectTicketsSection) return;
+    if (window.innerWidth >= 1024) {
+        mobileTicketCta.classList.add('translate-y-full', 'opacity-0', 'pointer-events-none');
+        return;
+    }
+    const targetTop = selectTicketsSection.getBoundingClientRect().top;
+    const shouldHide = targetTop <= Math.max(window.innerHeight * 0.7, 320);
+    mobileTicketCta.classList.toggle('translate-y-full', shouldHide);
+    mobileTicketCta.classList.toggle('opacity-0', shouldHide);
+    mobileTicketCta.classList.toggle('pointer-events-none', shouldHide);
+}
+refreshMobileTicketCtaVisibility();
+window.addEventListener('scroll', refreshMobileTicketCtaVisibility, { passive: true });
+window.addEventListener('resize', refreshMobileTicketCtaVisibility);
 updateSummary();
 </script>
 @endsection
