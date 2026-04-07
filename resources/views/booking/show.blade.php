@@ -14,9 +14,17 @@
     $eventLocation = collect([$booking->event->venue_name, $booking->event->city])->filter()->implode(', ');
     $portalFeePercentage = ticketly_format_percentage(ticketly_setting('portal_fee_percentage', config('ticketly.portal_fee_percentage', 10)));
     $serviceFeePercentage = ticketly_format_percentage(ticketly_setting('service_fee_percentage', config('ticketly.service_fee_percentage', 5)));
-    $refundPolicyText = trim(strip_tags(html_entity_decode((string) $booking->event->refund_policy))) !== ''
-        ? trim(strip_tags(html_entity_decode((string) $booking->event->refund_policy)))
-        : 'Free cancellation up to 24h before event';
+    $promoDiscountLabel = 'Discount';
+    if ($booking->promoCode) {
+        $promoValue = $booking->promoCode->type === 'percentage'
+            ? ticketly_format_percentage($booking->promoCode->value) . '%'
+            : ticketly_money($booking->promoCode->value);
+        $promoDiscountLabel .= ' (' . $booking->promoCode->code . ' - ' . $promoValue . ')';
+    }
+    $refundPolicySource = (string) ($booking->event->refund_policy ?? '');
+    $refundPolicyHtml = trim(strip_tags(html_entity_decode($refundPolicySource))) !== ''
+        ? $refundPolicySource
+        : '<p>Free cancellation up to 24h before event</p>';
 @endphp
 
 <main id="main-content" class="min-h-screen bg-[#ffffff] px-4 py-8 sm:py-10">
@@ -91,7 +99,7 @@
                         </div>
                         @if($booking->discount_amount > 0)
                             <div class="mt-2 flex items-center justify-between text-emerald-600">
-                                <span>Discount{{ $booking->promoCode ? ' (' . $booking->promoCode->code . ')' : '' }}</span>
+                                <span>{{ $promoDiscountLabel }}</span>
                                 <span>-{{ ticketly_money($booking->discount_amount) }}</span>
                             </div>
                         @endif
@@ -148,13 +156,13 @@
                 </svg>
                 <span>Confirmation sent to <span class="font-semibold text-slate-900">{{ $booking->customer_email }}</span></span>
             </p>
-            <p class="mt-2 flex items-center gap-2 text-[1rem] text-slate-700">
+            <div class="mt-2 flex items-start gap-2 text-[1rem] text-slate-700">
                 <svg class="h-5 w-5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 10V7a5 5 0 0 1 10 0v3"></path>
                     <rect x="5" y="10" width="14" height="10" rx="2" stroke-width="1.8"></rect>
                 </svg>
-                <span>{{ $refundPolicyText }}</span>
-            </p>
+                <div class="flex-1">{!! $refundPolicyHtml !!}</div>
+            </div>
         </div>
 
         <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">

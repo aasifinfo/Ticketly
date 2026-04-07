@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -100,6 +101,7 @@ class PosterAIService
     private function buildPromptText(): string
     {
         $today = now()->format('Y-m-d');
+        $categories = implode(', ', Event::CATEGORIES);
 
         return <<<PROMPT
 You are an AI that extracts structured event data from a poster image.
@@ -117,6 +119,11 @@ Fields required:
 - address
 - postcode
 
+Optional fields:
+- category
+- parking_transport_info
+- refund_policy
+
 Return format:
 {
   "event_title": "",
@@ -127,24 +134,30 @@ Return format:
   "venue_name": "",
   "city": "",
   "address": "",
-  "postcode": ""
+  "postcode": "",
+  "category": "",
+  "parking_transport_info": "",
+  "refund_policy": ""
 }
 
 Rules:
 1. Extract exact text from the poster if available.
-2. If any field is missing, intelligently generate it based on the poster context.
+2. If any required field is missing, intelligently generate it based on the poster context.
 3. If ONLY start_datetime exists, generate end_datetime exactly 2 hours later.
 4. If ONLY end_datetime exists, generate start_datetime exactly 2 hours earlier.
 5. If address exists, infer city and postcode.
-6. Ensure all fields are filled. NO EMPTY VALUES.
+6. Ensure all required fields are filled. Optional fields may be empty strings if the poster does not clearly provide them.
 7. Keep descriptions meaningful and relevant.
 8. event_title should be the most prominent event name or headline.
 9. start_datetime and end_datetime must use 24-hour format YYYY-MM-DDTHH:MM.
 10. If the poster has no year, choose the next upcoming reasonable future date.
 11. If city cannot be inferred, use Surat.
 12. If postcode cannot be inferred, use 395007.
-13. Never return null, markdown, comments, code fences, or extra keys.
-14. Keep event_title within 50 characters, short_description within 255 characters, venue_name within 50 characters, city within 50 characters, address within 300 characters, and postcode within 10 characters.
+13. category must be one of these exact values when confidently inferable: {$categories}. Otherwise return an empty string.
+14. parking_transport_info should include parking, shuttle, metro, bus, train, or transport notes only if clearly present.
+15. refund_policy should include refund, cancellation, transfer, or no-refund notes only if clearly present.
+16. Never return null, markdown, comments, code fences, or extra keys outside this schema.
+17. Keep event_title within 50 characters, short_description within 255 characters, venue_name within 50 characters, city within 50 characters, address within 300 characters, and postcode within 10 characters.
 
 Today is {$today}.
 PROMPT;

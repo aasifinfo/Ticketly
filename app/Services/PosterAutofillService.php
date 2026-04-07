@@ -147,7 +147,22 @@ class PosterAutofillService
             5000
         );
 
-        return $this->ensureFilledPayload([
+        $category = $this->cleanText(
+            $this->firstFilled($candidate, ['category', 'event_category']),
+            50
+        );
+
+        $parkingTransportInfo = $this->cleanText(
+            $this->firstFilled($candidate, ['parking_transport_info', 'parking_info', 'parking_transport', 'parking', 'transport_info', 'transport']),
+            1000
+        );
+
+        $refundPolicy = $this->cleanText(
+            $this->firstFilled($candidate, ['refund_policy', 'refunds', 'cancellation_policy', 'cancellation', 'refund']),
+            1000
+        );
+
+        $payload = $this->ensureFilledPayload([
             'event_title' => $title !== '' ? $title : $fallback['event_title'],
             'short_description' => $shortDescription !== '' ? $shortDescription : $fallback['short_description'],
             'full_description' => $fullDescription !== '' ? $fullDescription : $fallback['full_description'],
@@ -158,6 +173,12 @@ class PosterAutofillService
             'address' => $address,
             'postcode' => $postcode,
         ], $fallback);
+
+        $payload['category'] = $category !== '' ? $category : null;
+        $payload['parking_transport_info'] = $parkingTransportInfo !== '' ? $parkingTransportInfo : null;
+        $payload['refund_policy'] = $refundPolicy !== '' ? $refundPolicy : null;
+
+        return $payload;
     }
 
     private function buildFallbackPayload(UploadedFile $poster): array

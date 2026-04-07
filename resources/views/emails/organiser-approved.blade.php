@@ -21,7 +21,7 @@
   <div class="wrapper">
     <div class="card">
       <div class="head">
-        <h1>Registration Received</h1>
+        <h1>Registration Approved</h1>
       </div>
       <div class="body">
         <p>Hi {{ $organiser->name }},</p>

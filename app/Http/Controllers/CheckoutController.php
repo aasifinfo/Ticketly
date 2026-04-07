@@ -96,6 +96,8 @@ class CheckoutController extends Controller
         return response()->json([
             'valid' => true,
             'code' => $promoCode?->code,
+            'promo_type' => $promoCode?->type,
+            'promo_value' => $promoCode ? (float) $promoCode->value : null,
             'discount' => $pricing['discount'],
             'gross_total' => $pricing['gross_total'],
             'portal_fee' => $pricing['portal_fee'],

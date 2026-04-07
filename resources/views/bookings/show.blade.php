@@ -3,6 +3,15 @@
 @section('title', 'Booking Confirmed – ' . $booking->reference)
 
 @section('content')
+@php
+    $promoDiscountLabel = 'Discount';
+    if ($booking->promoCode) {
+        $promoValue = $booking->promoCode->type === 'percentage'
+            ? ticketly_format_percentage($booking->promoCode->value) . '%'
+            : ticketly_money($booking->promoCode->value);
+        $promoDiscountLabel .= ' (' . $booking->promoCode->code . ' - ' . $promoValue . ')';
+    }
+@endphp
 <div class="min-h-screen bg-gray-950 py-16 px-4">
     <div class="max-w-2xl mx-auto">
 
@@ -80,7 +89,7 @@
                     </div>
                     @if($booking->discount_amount > 0)
                     <div class="flex justify-between text-sm text-emerald-400">
-                        <span>Promo Discount@if($booking->promoCode) ({{ $booking->promoCode->code }})@endif</span>
+                        <span>{{ $promoDiscountLabel }}</span>
                         <span>-{{ ticketly_money($booking->discount_amount) }}</span>
                     </div>
                     @endif

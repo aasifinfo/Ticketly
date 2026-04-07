@@ -51,6 +51,13 @@
 @php
   $portalFeePercentage = ticketly_format_percentage(ticketly_setting('portal_fee_percentage', config('ticketly.portal_fee_percentage', 10)));
   $serviceFeePercentage = ticketly_format_percentage(ticketly_setting('service_fee_percentage', config('ticketly.service_fee_percentage', 5)));
+  $promoDiscountLabel = 'Discount';
+  if ($booking->promoCode) {
+    $promoValue = $booking->promoCode->type === 'percentage'
+      ? ticketly_format_percentage($booking->promoCode->value) . '%'
+      : ticketly_money($booking->promoCode->value);
+    $promoDiscountLabel .= ' (' . $booking->promoCode->code . ' - ' . $promoValue . ')';
+  }
 @endphp
 <div class="wrapper">
 
@@ -68,9 +75,9 @@
     <div class="section">
       <div class="section-title">Event Details</div>
       <div class="event-name">{{ $booking->event->title }}</div>
-      <div class="meta">📅 <span>{{ ticketly_format_date($booking->event->starts_at) }}</span></div>
-      <div class="meta">🕐 <span>{{ ticketly_format_time($booking->event->starts_at) }} – {{ ticketly_format_time($booking->event->ends_at) }}</span></div>
-      <div class="meta">📍 <span>{{ $booking->event->venue_name }}, {{ $booking->event->venue_address }}, {{ $booking->event->city }}</span></div>
+      <div class="meta">📅&nbsp;&nbsp; <span>{{ ticketly_format_date($booking->event->starts_at) }}</span></div>
+      <div class="meta">🕐&nbsp;&nbsp; <span>{{ ticketly_format_time($booking->event->starts_at) }} – {{ ticketly_format_time($booking->event->ends_at) }}</span></div>
+      <div class="meta">📍&nbsp;&nbsp; <span>{{ $booking->event->venue_name }}, {{ $booking->event->venue_address }}, {{ $booking->event->city }}</span></div>
     </div>
 
     <!-- Ticket Summary -->
@@ -94,7 +101,7 @@
       </div>
       @if($booking->discount_amount > 0)
       <div class="price-row discount-row">
-        <span>Promo Discount: {{ $booking->promoCode ? ' ('.$booking->promoCode->code.')' : '' }}</span>
+        <span>{{ $promoDiscountLabel }}</span>
         <span>-{{ ticketly_money($booking->discount_amount) }}</span>
       </div>
       @endif

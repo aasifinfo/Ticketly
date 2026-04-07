@@ -4,12 +4,16 @@
 @section('content')
 @php
     $heroImage = $event->banner_url ?: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1600&h=900&fit=crop';
-    $venueLine = collect([$event->venue_name, $event->venue_address, $event->city, $event->postcode])->filter()->implode(', ');
-    $mapQuery = rawurlencode($venueLine ?: 'Central Park Amphitheater, New York, NY');
-    $aboutSource = (string) ($event->description ?: $event->short_description ?: 'Join us for a standout live experience with premium production, unforgettable performances, and an incredible crowd.');
+    $venueName = $event->venue_name ?: 'Central Park Amphitheater';
+    $venueLine = collect([$event->venue_address, $event->city, $event->postcode])->filter()->unique()->implode(', ');
+    $mapLocation = collect([$event->venue_name, $event->venue_address, $event->city, $event->postcode])->filter()->unique()->implode(', ');
+    $mapQuery = rawurlencode($mapLocation ?: 'Central Park Amphitheater, New York, NY');
+    $aboutSource = (string) ($event->description ?? '');
     $aboutHtml = trim(strip_tags(html_entity_decode($aboutSource))) !== ''
-        ? strip_tags(html_entity_decode($aboutSource), '<p><br><ul><ol><li><strong><b><em><i><u><a><blockquote><h1><h2><h3><h4><h5><h6>')
-        : '<p>Join us for a standout live experience with premium production, unforgettable performances, and an incredible crowd.</p>';
+        ? $aboutSource
+        : (filled($event->short_description)
+            ? '<p>' . e($event->short_description) . '</p>'
+            : '<p>Join us for a standout live experience with premium production, unforgettable performances, and an incredible crowd.</p>');
     $organiserName = $event->organiser->name ?? 'Premier Events Co.';
     $organiserBio = $event->organiser->bio ?: 'We create unforgettable experiences for all audiences.';
     $organiserLogo = $event->organiser->logo_url ?? null;
@@ -20,9 +24,12 @@
     $reservedQuantities = $ticketItemsOld
         ->mapWithKeys(fn ($item) => [(int) data_get($item, 'ticket_tier_id') => (int) data_get($item, 'quantity', 0)]);
     $eventStartLabel = ticketly_format_compact_datetime($event->starts_at);
-    $eventEndLabel = ticketly_format_compact_datetime($event->ends_at);
-    $refundPolicyHtml = trim(strip_tags(html_entity_decode((string) $event->refund_policy))) !== ''
-        ? strip_tags(html_entity_decode((string) $event->refund_policy), '<p><br><ul><ol><li><strong><em><a><blockquote><h1><h2><h3>')
+    $eventEndLabel = $event->starts_at && $event->ends_at && $event->starts_at->isSameDay($event->ends_at)
+        ? $event->starts_at->format('d M Y') . ', ' . $event->ends_at->format('g:i A')
+        : ticketly_format_compact_datetime($event->ends_at);
+    $refundPolicySource = (string) ($event->refund_policy ?? '');
+    $refundPolicyHtml = trim(strip_tags(html_entity_decode($refundPolicySource))) !== ''
+        ? $refundPolicySource
         : '<p>Full refund available up to 7 days before the event. 50% refund up to 3 days before. No refunds within 72 hours of the event.</p>';
     $lineupItems = collect($event->performer_lineup ?? [])->filter(fn ($item) => filled(data_get($item, 'name')))->values();
     if ($lineupItems->isEmpty()) {
@@ -61,9 +68,6 @@
                             <circle cx="18" cy="18" r="2.25" stroke-width="1.8"/>
                         </svg>
                     </button>
-                    <!-- <button type="button" id="favorite-event-button" class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white/95 text-slate-700 shadow-sm ring-1 ring-slate-200" aria-label="Save event" aria-pressed="false">
-                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12.62 20.55a1 1 0 0 1-1.24 0C6.53 16.88 4 14.39 4 10.92 4 8.37 5.97 6.5 8.31 6.5c1.42 0 2.79.68 3.69 1.83.9-1.15 2.27-1.83 3.69-1.83C18.03 6.5 20 8.37 20 10.92c0 3.47-2.53 5.96-7.38 9.63Z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/></svg>
-                    </button> -->
                 </div>
             </div>
 
@@ -98,22 +102,22 @@
                                 <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-600"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 3v3m8-3v3M4 9h16M5.5 5.5h13A1.5 1.5 0 0 1 20 7v11.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5V7a1.5 1.5 0 0 1 1.5-1.5Z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></div>
                                 <div>
                                     <p class="text-[1.05rem] font-semibold text-slate-900">Start: {{ $eventStartLabel }}</p>
-                                    <p class="mt-1 text-[1rem] text-slate-500">End: {{ $eventEndLabel }}</p>
+                                    <p class="text-[1.05rem] font-semibold text-slate-900">End: {{ $eventEndLabel }}</p>
                                 </div>
                             </div>
                             <div class="flex items-start gap-4">
                                 <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-600"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20.5s6.5-5.8 6.5-11A6.5 6.5 0 0 0 5.5 9.5c0 5.2 6.5 11 6.5 11Z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/><path d="M12 12.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></div>
-                                <div><p class="text-[1.05rem] font-semibold text-slate-900">{{ $event->venue_name ?: 'Central Park Amphitheater' }}</p><p class="mt-1 text-[1rem] text-slate-500"><a href="https://www.google.com/maps/search/?api=1&query={{ $mapQuery }}" target="_blank" rel="noopener noreferrer" class="text-inherit">{{ $venueLine ?: 'Central Park, New York, NY' }}</a></p></div>
+                                <div><p class="text-[1.05rem] font-semibold text-slate-900">{{ $venueName }}</p><p class="mt-1 text-[1rem] font-semibold text-slate-900"><a href="https://www.google.com/maps/search/?api=1&query={{ $mapQuery }}" target="_blank" rel="noopener noreferrer" class="text-inherit">{{ $venueLine ?: 'Central Park, New York, NY' }}</a></p></div>
                             </div>
                         </div>
                     </section>
 
                     <section class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-8">
-                        <div class="mx-auto w-full max-w-4xl">
-                            <h2 class="text-[1.75rem] font-bold tracking-[-0.03em] text-slate-900">About This Event</h2>
-                            <div class="mt-6 break-words text-[1.02rem] leading-8 text-slate-500 md:text-justify [overflow-wrap:anywhere] [&_a]:underline [&_b]:font-semibold [&_em]:italic [&_h1]:mb-4 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:mb-4 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mb-3 [&_h3]:text-lg [&_h3]:font-semibold [&_h4]:mb-3 [&_h4]:font-semibold [&_h5]:mb-2 [&_h5]:font-semibold [&_h6]:mb-2 [&_h6]:font-semibold [&_i]:italic [&_li]:mt-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-4 [&_strong]:font-semibold [&_u]:underline [&_ul]:list-disc [&_ul]:pl-6">{!! $aboutHtml !!}</div>
-                        </div>
+                            <h2 class="text-[1.75rem] m-4 font-bold tracking-[-0.03em] text-slate-900" sm:m-4>About This Event</h2>    
+                    {!! $aboutHtml !!}
                     </section>
+
+                     
 
                     <section class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-8">
                         <h2 class="text-[1.75rem] font-bold tracking-[-0.03em] text-slate-900">Lineup / Schedule</h2>
@@ -124,7 +128,7 @@
                         <h2 class="text-[1.75rem] font-bold tracking-[-0.03em] text-slate-900">Venue</h2>
                         <div class="mt-5 overflow-hidden rounded-[20px] border border-slate-200"><iframe title="Venue map" src="https://maps.google.com/maps?q={{ $mapQuery }}&t=&z=13&ie=UTF8&iwloc=&output=embed" class="h-[320px] w-full sm:h-[400px]" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
                         <div class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                            <div><p class="text-[1.12rem] font-semibold text-slate-900">{{ $event->venue_name ?: 'Central Park Amphitheater' }}</p><p class="mt-1 text-[1rem] text-slate-500">{{ $venueLine ?: 'Central Park, New York, NY' }}</p></div>
+                            <div><p class="text-[1.12rem] font-semibold text-slate-900">{{ $venueName }}</p><p class="mt-1 text-[1rem] text-slate-500"><a href="https://www.google.com/maps/search/?api=1&query={{ $mapQuery }}" target="_blank" rel="noopener noreferrer" class="text-inherit">{{ $venueLine ?: 'Central Park, New York, NY' }}</a></p></div>
                             <a href="https://www.google.com/maps/search/?api=1&query={{ $mapQuery }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 hover:bg-slate-50"><svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor"><path d="M10 3.75h5.25V9M9.25 10.75l6-6M14.25 10.75v4.5a1 1 0 0 1-1 1h-8.5a1 1 0 0 1-1-1v-8.5a1 1 0 0 1 1-1h4.5" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg><span>Get Directions</span></a>
                         </div>
                     </section>
@@ -139,7 +143,6 @@
                             <div class="min-w-0 flex-1">
                                 <div class="flex flex-wrap items-center gap-3"><h2 class="text-[1.35rem] font-bold text-slate-900">{{ $organiserName }}</h2>@if(($event->organiser->is_approved ?? false))<span class="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">Verified</span>@endif</div>
                                 <p class="mt-4 max-w-3xl text-[1rem] leading-7 text-slate-500">{{ $organiserBio }}</p>
-                                <!-- <div class="mt-5 flex flex-wrap items-center gap-3">@if($event->organiser->website ?? false)<a href="{{ $event->organiser->website }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50">View Profile</a>@else<button type="button" class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-800 hover:bg-slate-50">View Profile</button>@endif<button type="button" class="text-sm font-medium text-slate-900">Follow</button></div> -->
                             </div>
                         </div>
                     </section>
@@ -158,7 +161,7 @@
 
                     <section class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-8">
                         <h2 class="text-[1.75rem] font-bold tracking-[-0.03em] text-slate-900">Refund Policy</h2>
-                        <div class="mt-6 max-w-4xl text-[1.02rem] leading-8 text-slate-500">{!! $refundPolicyHtml !!}</div>
+                        {!! $refundPolicyHtml !!}
                     </section>
 
                  <section class="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.06)] sm:p-8">

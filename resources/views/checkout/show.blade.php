@@ -38,6 +38,13 @@
     );
     $initialDiscount = (float) $initialPricing['discount'];
     $initialTotal = (float) $initialPricing['total'];
+    $initialDiscountLabel = 'Discount';
+    if ($reservation->promoCode) {
+        $promoValue = $reservation->promoCode->type === 'percentage'
+            ? ticketly_format_percentage($reservation->promoCode->value) . '%'
+            : ticketly_money($reservation->promoCode->value);
+        $initialDiscountLabel .= ' (' . $reservation->promoCode->code . ' - ' . $promoValue . ')';
+    }
 @endphp
 
 <div class="min-h-screen bg-[#ffffff] text-slate-900">
@@ -177,7 +184,7 @@
                 <section class="rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_10px_30px_rgba(15,23,42,0.04)] max-[375px]:rounded-[24px] max-[375px]:p-4">
                     <label class="flex items-center gap-4 text-[1rem] text-slate-700 max-[375px]:items-start max-[375px]:gap-3 max-[375px]:text-[0.9rem]">
                         <input id="terms-checkbox" type="checkbox" aria-describedby="terms-checkbox-error" class="h-6 w-6 rounded-md border border-slate-300 text-violet-600 focus:ring-violet-500 max-[375px]:mt-0.5 max-[375px]:h-5 max-[375px]:w-5">
-                        <span>I agree to the <a href="#" class="font-medium text-violet-500">Terms of Service</a> and <a href="#" class="font-medium text-violet-500">Privacy Policy</a></span>
+                        <span>I agree to the <a href="{{ route('terms') }}" target="_blank" class="font-medium text-violet-500">Terms of Service</a> and <a href="{{ route('privacy') }}" target="_blank" class="font-medium text-violet-500">Privacy Policy</a></span>
                     </label>
                     <p id="terms-checkbox-error" class="hidden mt-3 text-sm text-rose-600"></p>
                 </section>
@@ -235,7 +242,7 @@
                                 <span data-summary="service-fee" class="font-medium text-slate-900">{{ ticketly_money($initialPricing['service_fee']) }}</span>
                             </div>
                             <div data-discount-row class="{{ $initialDiscount > 0 ? '' : 'hidden ' }}mt-4 flex items-center justify-between text-emerald-600">
-                                <span>Discount</span>
+                                <span data-discount-label>{{ $initialDiscountLabel }}</span>
                                 <span data-discount-value>-{{ ticketly_money($initialDiscount) }}</span>
                             </div>
                             <div class="mt-8 flex items-center justify-between text-[1.05rem] font-extrabold text-slate-900 max-[375px]:mt-6 max-[375px]:text-[0.98rem] sm:text-[1.15rem]">
@@ -280,7 +287,7 @@
                                     <span data-summary="service-fee" class="font-medium text-slate-900">{{ ticketly_money($initialPricing['service_fee']) }}</span>
                                 </div>
                                 <div data-discount-row class="{{ $initialDiscount > 0 ? '' : 'hidden ' }}mt-4 flex items-center justify-between text-emerald-600">
-                                    <span>Discount</span>
+                                    <span data-discount-label>{{ $initialDiscountLabel }}</span>
                                     <span data-discount-value>-{{ ticketly_money($initialDiscount) }}</span>
                                 </div>
                                 <div class="mt-8 flex items-center justify-between border-t border-slate-200 pt-6 text-[1.05rem] font-extrabold text-slate-900 sm:text-[1.15rem]">
@@ -397,6 +404,8 @@ document.addEventListener('DOMContentLoaded', function () {
     let resolvedBillingProfile = null;
     let isExpired = false;
     let promoCode = @js((string) optional($reservation->promoCode)->code);
+    let promoCodeType = @js(optional($reservation->promoCode)->type);
+    let promoCodeValue = @js($reservation->promoCode ? (float) $reservation->promoCode->value : null);
     let discountAmount = {{ $initialDiscount }};
     let currentTotal = {{ (float) $initialTotal }};
     const subtotal = {{ (float) $reservation->subtotal }};
@@ -893,6 +902,8 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             promoCode = data.code || '';
+            promoCodeType = data.promo_type || null;
+            promoCodeValue = data.promo_value ?? null;
             if (promoInput) {
                 promoInput.value = promoCode;
             }
@@ -1282,11 +1293,35 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('[data-discount-value]').forEach((el) => {
             el.textContent = '-' + currencySymbol + disc.toFixed(2);
         });
+        document.querySelectorAll('[data-discount-label]').forEach((el) => {
+            el.textContent = formatDiscountLabel(promoCode, promoCodeType, promoCodeValue);
+        });
 
         const finalTotal = document.getElementById('final-total');
         if (finalTotal) {
             finalTotal.textContent = resolvedTotal.toFixed(2);
         }
+    }
+
+    function formatDiscountLabel(code, type, value) {
+        if (!code) {
+            return 'Discount';
+        }
+
+        let promoValueLabel = '';
+        const numericValue = Number(value);
+
+        if (type === 'percentage' && Number.isFinite(numericValue)) {
+            promoValueLabel = Number.isInteger(numericValue)
+                ? `${numericValue}%`
+                : `${numericValue.toFixed(2).replace(/\.?0+$/, '')}%`;
+        } else if (Number.isFinite(numericValue)) {
+            promoValueLabel = currencySymbol + numericValue.toFixed(2);
+        }
+
+        return promoValueLabel
+            ? `Discount (${code} - ${promoValueLabel})`
+            : `Discount (${code})`;
     }
 
     function updateTotals() {

@@ -1020,7 +1020,11 @@
   <div class="event-card__head">
     <div class="event-card__title-wrap">
       <span class="event-card__icon" aria-hidden="true">
-       <img src="{{ asset('eventicon/faqs.png') }}" alt="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0"/>
+          <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.52-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286"/>
+          <path d="M7.001 11a1 1 0 1 0 2 0 1 1 0 0 0-2 0"/>
+        </svg>
       </span>
       <div>
         <h2 class="event-card__title">Faqs</h2>
@@ -1088,6 +1092,7 @@ let refundPolicyEditorInstance = null;
 let lastValidRefundPolicyData = refundPolicyField?.value || '';
 let isApplyingRefundPolicyLimit = false;
 let pendingAutofillDescription = null;
+let pendingAutofillRefundPolicy = null;
 let posterAutofillRequestId = 0;
 
 ClassicEditor.create(descriptionField, {
@@ -1114,6 +1119,12 @@ ClassicEditor.create(refundPolicyField, {
 }).then((editor) => {
     refundPolicyEditorInstance = editor;
     lastValidRefundPolicyData = editor.getData();
+
+    if (pendingAutofillRefundPolicy !== null) {
+        setRefundPolicyValue(pendingAutofillRefundPolicy);
+        pendingAutofillRefundPolicy = null;
+    }
+
     editor.model.document.on('change:data', () => {
         if (!isApplyingRefundPolicyLimit) {
             enforceRefundPolicyMaxlength(refundPolicyField);
@@ -1627,6 +1638,57 @@ function setDescriptionValue(value) {
     validateMaxlengthField(descriptionField);
 }
 
+function setRefundPolicyValue(value) {
+    if (typeof value !== 'string' || !refundPolicyField) {
+        return;
+    }
+
+    const trimmedValue = value.trim();
+    if (!trimmedValue) {
+        return;
+    }
+
+    if (!refundPolicyEditorInstance) {
+        pendingAutofillRefundPolicy = trimmedValue;
+        refundPolicyField.value = trimmedValue;
+        validateMaxlengthField(refundPolicyField);
+        return;
+    }
+
+    refundPolicyEditorInstance.setData(textToEditorHtml(trimmedValue));
+    refundPolicyField.value = trimmedValue;
+    lastValidRefundPolicyData = refundPolicyEditorInstance.getData();
+    validateMaxlengthField(refundPolicyField);
+}
+
+function setSelectValue(selector, value) {
+    if (typeof value !== 'string') {
+        return;
+    }
+
+    const normalizedValue = value.trim().toLowerCase();
+    if (!normalizedValue) {
+        return;
+    }
+
+    const field = document.querySelector(selector);
+    if (!(field instanceof HTMLSelectElement)) {
+        return;
+    }
+
+    const matchedOption = Array.from(field.options).find((option) => {
+        return option.value.trim().toLowerCase() === normalizedValue
+            || option.textContent.trim().toLowerCase() === normalizedValue;
+    });
+
+    if (!matchedOption) {
+        return;
+    }
+
+    field.value = matchedOption.value;
+    triggerFieldUpdate(field);
+}
+
 function updateSelectedFileName(input, text) {
     const scope = input.closest('.js-file-upload-scope');
     const selector = input.dataset.fileNameSelector || '.js-file-name';
@@ -1660,6 +1722,12 @@ function applyPosterAutofill(payload) {
     setInputValue('input[name="city"]', payload.city);
     setInputValue('input[name="venue_address"]', payload.address);
     setInputValue('input[name="postcode"]', payload.postcode);
+    setSelectValue('select[name="category"]', payload.category);
+    setInputValue(
+        'textarea[name="parking_info"]',
+        typeof payload.parking_transport_info === 'string' ? payload.parking_transport_info : payload.parking_info
+    );
+    setRefundPolicyValue(payload.refund_policy);
 }
 
 async function requestPosterAutofill(file) {

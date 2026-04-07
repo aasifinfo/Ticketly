@@ -47,6 +47,12 @@
 @endsection
 
 @section('content')
+@php
+  $refundPolicySource = (string) ($event->refund_policy ?? '');
+  $refundPolicyHtml = trim(strip_tags(html_entity_decode($refundPolicySource))) !== ''
+      ? $refundPolicySource
+      : '<p>Not specified.</p>';
+@endphp
 <div class="grid gap-6">
   <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
     <div>
@@ -193,7 +199,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
             <div class="text-xs uppercase tracking-wider text-gray-500">Refund Policy</div>
-            <div class="mt-1 text-gray-300 whitespace-pre-line">{!! $event->refund_policy ? strip_tags(html_entity_decode((string) $event->refund_policy), '<p><br><ul><ol><li><strong><em><a><blockquote><h1><h2><h3>') : 'Not specified.' !!}</div>
+            <div class="admin-event-description mt-1 text-sm text-gray-300">{!! $refundPolicyHtml !!}</div>
           </div>
           <div>
             <div class="text-xs uppercase tracking-wider text-gray-500">Parking Info</div>
